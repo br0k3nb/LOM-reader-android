@@ -1,0 +1,25 @@
+name: lotm_reader
+description: Flutter reader for LOTM with downloadable offline editions.
+publish_to: none
+version: 1.0.0+1
+environment:
+  sdk: '>=3.10.0 <4.0.0'
+dependencies:
+  flutter:
+    sdk: flutter
+  webview_flutter: 4.14.1
+  path_provider: 2.1.6
+  crypto: 3.0.7
+  url_launcher: 6.3.2
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: 6.0.0
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/reader/
+    - assets/reader/assets/
+    - assets/fonts/
+    - assets/meta.json
+    - assets/license.md
