@@ -4,12 +4,14 @@ import 'package:flutter/services.dart';
 import 'library_store.dart';
 import 'models.dart';
 
-/// The WebView reads only local files. No server, CDN, or service worker is involved.
+/// The WebView uses the bundled renderer. Native requests provide illustrations
+/// for online chapters; downloaded chapters require no network requests.
 class ReaderServer {
   ReaderServer(this.library);
   final LibraryStore library;
   HttpServer? _server;
   Edition? edition;
+  bool online = false;
   final String _token = List.generate(
     32,
     (_) => Random.secure().nextInt(256).toRadixString(16).padLeft(2, '0'),
@@ -57,16 +59,20 @@ class ReaderServer {
       response.headers.contentType = _type(path);
       if (path.startsWith('assets/images/')) {
         final e = edition;
-        if (e == null || !library.status(e).complete) {
+        if (e == null) {
           response.statusCode = 404;
           return;
         }
-        final file = library.assetFile(e, '/$path');
-        if (!await file.exists()) {
+        final bytes = await library.readIllustration(
+          e,
+          '/$path',
+          online: online,
+        );
+        if (bytes == null) {
           response.statusCode = 404;
           return;
         }
-        await response.addStream(file.openRead());
+        response.add(bytes);
       } else {
         final key = path.startsWith('fonts/')
             ? 'assets/$path'

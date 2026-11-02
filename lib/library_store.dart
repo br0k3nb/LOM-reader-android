@@ -9,8 +9,19 @@ const defaultSource = 'https://lotmreader.vercel.app';
 
 class DownloadPaused implements Exception {}
 
+class ChapterContent {
+  const ChapterContent(this.html, {required this.offline});
+  final String html;
+  final bool offline;
+}
+
 /// Content is persistent app data, never an evictable browser cache.
 class LibraryStore extends ChangeNotifier {
+  bool _disposed = false;
+  void _notify() {
+    if (!_disposed) notifyListeners();
+  }
+
   LibraryStore(
     this.root,
     this.editions, {
@@ -28,6 +39,15 @@ class LibraryStore extends ChangeNotifier {
   bool get busy => statuses.values.any((s) => s.active);
   DownloadStatus status(Edition e) =>
       statuses.putIfAbsent(e.key, DownloadStatus.new);
+  void applyDownloadSnapshot(Map<dynamic, dynamic> snapshot) {
+    for (final e in editions) {
+      if (snapshot[e.key] is Map) {
+        status(e).apply(Map<String, dynamic>.from(snapshot[e.key]));
+      }
+    }
+    _notify();
+  }
+
   Directory folder(Edition e) => Directory('${root.path}/${e.book}/${e.tl}');
   File chapterFile(Edition e, int slug) =>
       File('${folder(e).path}/chapters/$slug.html');
@@ -36,7 +56,9 @@ class LibraryStore extends ChangeNotifier {
   Future<void> initialize() async {
     await root.create(recursive: true);
     for (final e in editions) {
-      final s = status(e)..total = e.chapters.length;
+      final s = status(e)
+        ..total = e.chapters.length
+        ..complete = false;
       final ready = File('${folder(e).path}/complete.json');
       if (await ready.exists()) {
         try {
@@ -68,6 +90,7 @@ class LibraryStore extends ChangeNotifier {
           s.bytes = (info['bytes'] as num).toInt();
           s.missingImages = (info['unavailable'] as List).length;
           s.phase = 'Available offline';
+          s.error = null;
         } catch (_) {
           s.error =
               'Some local files are missing. Resume the download to repair this edition.';
@@ -76,13 +99,21 @@ class LibraryStore extends ChangeNotifier {
       }
       if (!s.complete) {
         s.done = 0;
-        for (final c in e.chapters) {
-          if (await chapterFile(e, c.slug).exists()) s.done++;
+        s.bytes = 0;
+        if (await folder(e).exists()) {
+          for (final c in e.chapters) {
+            if (await chapterFile(e, c.slug).exists()) s.done++;
+          }
+          await for (final entity in folder(
+            e,
+          ).list(recursive: true, followLinks: false)) {
+            if (entity is File) s.bytes += await entity.length();
+          }
         }
         if (s.done > 0) s.phase = 'Paused · tap Resume';
       }
     }
-    notifyListeners();
+    _notify();
   }
 
   static bool safePath(String path) =>
@@ -124,17 +155,15 @@ class LibraryStore extends ChangeNotifier {
     String path, {
     bool allowMissing = false,
     int limit = 5 * 1024 * 1024,
+    bool respectPause = true,
   }) async {
     for (var attempt = 0; attempt < 3; attempt++) {
-      if (_paused) throw DownloadPaused();
+      if (respectPause && _paused) throw DownloadPaused();
       try {
         final request = await _client
             .getUrl(Uri.parse(source).resolve(path))
             .timeout(const Duration(seconds: 30));
-        request.headers.set(
-          HttpHeaders.userAgentHeader,
-          'LOTMReader/1.0 (offline download)',
-        );
+        request.headers.set(HttpHeaders.userAgentHeader, 'LOTMReader/1.0');
         final response = await request.close().timeout(
           const Duration(seconds: 30),
         );
@@ -150,7 +179,7 @@ class LibraryStore extends ChangeNotifier {
         await for (final chunk in response.timeout(
           const Duration(seconds: 30),
         )) {
-          if (_paused) throw DownloadPaused();
+          if (respectPause && _paused) throw DownloadPaused();
           bytes.addAll(chunk);
           if (bytes.length > limit) {
             throw const FormatException(
@@ -172,6 +201,51 @@ class LibraryStore extends ChangeNotifier {
     throw StateError('Download failed');
   }
 
+  /// Completed editions work without a connection. Other editions stream just
+  /// the requested chapter, without creating files or marking a download ready.
+  Future<ChapterContent> readChapter(Edition e, Chapter chapter) async {
+    if (!editions.contains(e) || e.chapter(chapter.slug)?.key != chapter.key) {
+      throw ArgumentError('Unknown chapter');
+    }
+    if (status(e).complete) {
+      return ChapterContent(
+        await chapterFile(e, chapter.slug).readAsString(),
+        offline: true,
+      );
+    }
+    final bytes = (await _fetch('/read/${chapter.key}', respectPause: false))!;
+    final html = extractArticle(utf8.decode(bytes));
+    imagePaths(html); // Apply the same illustration URL rules in both modes.
+    return ChapterContent(html, offline: false);
+  }
+
+  /// Images are served through the local renderer in either mode, so typography,
+  /// captions, footnotes, and the resource policy remain identical.
+  Future<List<int>?> readIllustration(
+    Edition e,
+    String path, {
+    required bool online,
+  }) async {
+    if (!editions.contains(e) ||
+        !path.startsWith('/assets/images/') ||
+        !safePath(path.substring(1))) {
+      throw ArgumentError('Unknown illustration');
+    }
+    if (status(e).complete) {
+      final file = assetFile(e, path);
+      if (await file.exists()) return file.readAsBytes();
+      // A source 404 recorded during a download stays unavailable offline.
+      if (!online) return null;
+    }
+    if (!online) return null;
+    return _fetch(
+      path,
+      allowMissing: true,
+      limit: 30 * 1024 * 1024,
+      respectPause: false,
+    );
+  }
+
   Future<void> _atomicWrite(File file, List<int> bytes) async {
     await file.parent.create(recursive: true);
     final temp = File('${file.path}.part');
@@ -190,8 +264,15 @@ class LibraryStore extends ChangeNotifier {
     final s = status(e)
       ..active = true
       ..error = null
+      ..etaSeconds = null
+      ..bytesPerSecond = 0
+      ..imagesDone = 0
+      ..imagesTotal = 0
       ..phase = 'Downloading chapters';
-    notifyListeners();
+    final started = Stopwatch()..start();
+    var fetchedBytes = 0;
+    var fetchedChapters = 0;
+    _notify();
     try {
       // Each successful chapter is its own durable checkpoint. Four workers bound load and memory.
       final queue = e.chapters.iterator;
@@ -215,6 +296,8 @@ class LibraryStore extends ChangeNotifier {
           } else {
             final bytes = (await _fetch('/read/${c.key}'))!;
             html = extractArticle(utf8.decode(bytes));
+            fetchedBytes += bytes.length;
+            fetchedChapters++;
             await _atomicWrite(file, utf8.encode(html));
           }
           images.addAll(imagePaths(html));
@@ -225,7 +308,15 @@ class LibraryStore extends ChangeNotifier {
           };
           totalBytes += bytes.length;
           s.done = ++done;
-          notifyListeners();
+          s.bytes = totalBytes;
+          s.estimatedBytes = (totalBytes / done * s.total).round();
+          final seconds = started.elapsedMilliseconds / 1000;
+          if (seconds > 0 && fetchedChapters > 0) {
+            s.bytesPerSecond = fetchedBytes / seconds;
+            s.etaSeconds = (seconds / fetchedChapters * (s.total - done))
+                .ceil();
+          }
+          _notify();
         }
       }
 
@@ -233,6 +324,11 @@ class LibraryStore extends ChangeNotifier {
       await Future.wait(List.generate(4, (_) => worker()), eagerError: false);
       if (_paused) throw DownloadPaused();
       s.phase = 'Downloading illustrations';
+      s.imagesTotal = images.length;
+      s.etaSeconds = null;
+      final imagesStarted = Stopwatch()..start();
+      var imageBytes = 0;
+      var fetchedImages = 0;
       final unavailable = <String>[];
       for (final path in images.toList()..sort()) {
         if (_paused) throw DownloadPaused();
@@ -245,8 +341,12 @@ class LibraryStore extends ChangeNotifier {
           );
           if (bytes == null) {
             unavailable.add(path);
+            s.imagesDone++;
+            _notify();
             continue;
           }
+          fetchedBytes += bytes.length;
+          fetchedImages++;
           await _atomicWrite(file, bytes);
         }
         final bytes = await file.readAsBytes();
@@ -268,8 +368,25 @@ class LibraryStore extends ChangeNotifier {
           'sha256': sha256.convert(bytes).toString(),
         };
         totalBytes += bytes.length;
+        imageBytes += bytes.length;
         s.bytes = totalBytes;
-        notifyListeners();
+        s.imagesDone++;
+        s.estimatedBytes =
+            totalBytes +
+            (imageBytes / s.imagesDone * (s.imagesTotal - s.imagesDone))
+                .round();
+        if (fetchedImages > 0) {
+          s.etaSeconds =
+              (imagesStarted.elapsedMilliseconds /
+                      1000 /
+                      fetchedImages *
+                      (s.imagesTotal - s.imagesDone))
+                  .ceil();
+        }
+        s.bytesPerSecond =
+            fetchedBytes /
+            (started.elapsedMilliseconds / 1000).clamp(.001, double.infinity);
+        _notify();
       }
       if (_paused) throw DownloadPaused();
       await _atomicWrite(
@@ -289,6 +406,8 @@ class LibraryStore extends ChangeNotifier {
       );
       s.complete = true;
       s.bytes = totalBytes;
+      s.estimatedBytes = totalBytes;
+      s.etaSeconds = 0;
       s.missingImages = unavailable.length;
       s.phase = 'Available offline';
     } on DownloadPaused {
@@ -298,7 +417,7 @@ class LibraryStore extends ChangeNotifier {
       s.error = '$error';
     } finally {
       s.active = false;
-      notifyListeners();
+      _notify();
     }
   }
 
@@ -309,7 +428,7 @@ class LibraryStore extends ChangeNotifier {
     final dir = folder(e);
     if (await dir.exists()) await dir.delete(recursive: true);
     statuses[e.key] = DownloadStatus()..total = e.chapters.length;
-    notifyListeners();
+    _notify();
   }
 
   Future<bool> verify(Edition e) async {
@@ -328,7 +447,7 @@ class LibraryStore extends ChangeNotifier {
         status(e).complete = false;
         status(e).error =
             'A damaged file was found. Resume the download to repair it.';
-        notifyListeners();
+        _notify();
         return false;
       }
     }
@@ -359,6 +478,7 @@ class LibraryStore extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     _paused = true;
     _client.close(force: true);
     super.dispose();

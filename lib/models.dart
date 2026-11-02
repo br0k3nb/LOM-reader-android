@@ -70,4 +70,41 @@ class DownloadStatus {
   bool active = false;
   String? error;
   String phase = 'Not downloaded';
+  int estimatedBytes = 0;
+  int? etaSeconds;
+  double bytesPerSecond = 0;
+  int imagesDone = 0;
+  int imagesTotal = 0;
+
+  Map<String, dynamic> toJson() => {
+    'done': done,
+    'total': total,
+    'bytes': bytes,
+    'complete': complete,
+    'active': active,
+    'error': error,
+    'phase': phase,
+    'missingImages': missingImages,
+    'estimatedBytes': estimatedBytes,
+    'etaSeconds': etaSeconds,
+    'bytesPerSecond': bytesPerSecond,
+    'imagesDone': imagesDone,
+    'imagesTotal': imagesTotal,
+  };
+
+  void apply(Map<String, dynamic> data) {
+    done = (data['done'] as num?)?.toInt() ?? 0;
+    total = (data['total'] as num?)?.toInt() ?? total;
+    bytes = (data['bytes'] as num?)?.toInt() ?? 0;
+    complete = data['complete'] == true;
+    active = data['active'] == true;
+    error = data['error'] as String?;
+    phase = data['phase'] as String? ?? 'Not downloaded';
+    missingImages = (data['missingImages'] as num?)?.toInt() ?? 0;
+    estimatedBytes = (data['estimatedBytes'] as num?)?.toInt() ?? 0;
+    etaSeconds = (data['etaSeconds'] as num?)?.toInt();
+    bytesPerSecond = (data['bytesPerSecond'] as num?)?.toDouble() ?? 0;
+    imagesDone = (data['imagesDone'] as num?)?.toInt() ?? 0;
+    imagesTotal = (data['imagesTotal'] as num?)?.toInt() ?? 0;
+  }
 }

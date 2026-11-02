@@ -12,6 +12,27 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "dev.lotm.reader/storage")
+            .setMethodCallHandler { call, result ->
+                if (call.method != "usage") { result.notImplemented(); return@setMethodCallHandler }
+                Thread {
+                    try {
+                        val seen = mutableSetOf<String>()
+                        val dirs = listOf(filesDir, cacheDir, codeCacheDir,
+                            java.io.File(applicationInfo.dataDir, "databases"),
+                            java.io.File(applicationInfo.dataDir, "shared_prefs"))
+                        var dataBytes = 0L
+                        for (dir in dirs) {
+                            dir.walkTopDown().forEach { file ->
+                                if (file.isFile && seen.add(file.canonicalPath)) dataBytes += file.length()
+                            }
+                        }
+                        val apkPaths = listOf(applicationInfo.sourceDir) + (applicationInfo.splitSourceDirs?.toList() ?: emptyList())
+                        val apkBytes = apkPaths.sumOf { java.io.File(it).length() }
+                        runOnUiThread { result.success(mapOf("appBytes" to apkBytes, "dataBytes" to dataBytes, "freeBytes" to filesDir.usableSpace)) }
+                    } catch (e: Exception) { runOnUiThread { result.error("storage", e.message, null) } }
+                }.start()
+            }
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "dev.lotm.reader/documents")
             .setMethodCallHandler { call, result ->
                 if (pending != null) {

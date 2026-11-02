@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotm_reader/library_store.dart';
 import 'package:lotm_reader/models.dart';
+import 'package:lotm_reader/reader_server.dart';
 import 'package:lotm_reader/state_store.dart';
 
 class NetworkTestBinding extends AutomatedTestWidgetsFlutterBinding {
@@ -18,6 +19,7 @@ void main() {
   late LibraryStore library;
   late Map<String, int> requests;
   var brokenImage = false;
+  var brokenChapter = false;
   final original =
       '<h1 id="chapter">Chapter 1: Crimson</h1><p><em>Ouch!</em> Klein &amp; Melissa.</p><figure><img src="/assets/images/lotm/test.webp" width="10" height="20"><figcaption>Cover</figcaption></figure><p><a href="#fn1">1</a></p><aside id="fn1">Footnote</aside>';
   setUp(() async {
@@ -25,10 +27,16 @@ void main() {
     source = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     requests = {};
     brokenImage = false;
+    brokenChapter = false;
     source.listen((request) async {
       final path = request.uri.path;
       requests[path] = (requests[path] ?? 0) + 1;
       if (path.startsWith('/read/')) {
+        if (brokenChapter) {
+          request.response.statusCode = 503;
+          await request.response.close();
+          return;
+        }
         request.response.headers.contentType = ContentType.html;
         request.response.write(
           '<html><body><article class="chapter-content prose prose-lg">$original</article></body></html>',
@@ -67,6 +75,101 @@ void main() {
     await temp.delete(recursive: true);
   });
 
+  test('all books and translations read online without a download', () async {
+    final editions = parseCatalog(
+      await File('reader/source/lib/meta.json').readAsString(),
+    );
+    final onlineLibrary = LibraryStore(
+      Directory('${temp.path}/online'),
+      editions,
+      source: library.source,
+    );
+    addTearDown(onlineLibrary.dispose);
+    await onlineLibrary.initialize();
+    expect(editions, hasLength(5));
+    expect(editions.map((e) => e.book).toSet(), {'lotm', 'coi'});
+    for (final e in editions) {
+      // A paused bulk download must not pause online chapter or image requests.
+      onlineLibrary.pause();
+      for (final c in [e.chapters.first, e.chapters[1], e.chapters.last]) {
+        final content = await onlineLibrary.readChapter(e, c);
+        expect(content.html, original);
+        expect(content.offline, false);
+        expect(requests['/read/${c.key}'], 1);
+      }
+      expect(
+        await onlineLibrary.readIllustration(
+          e,
+          '/assets/images/lotm/test.webp',
+          online: true,
+        ),
+        isNotNull,
+      );
+      expect(onlineLibrary.status(e).complete, false);
+      expect(onlineLibrary.status(e).done, 0);
+      expect(await onlineLibrary.folder(e).exists(), false);
+    }
+  });
+
+  test(
+    'online chapter failures can be retried without download state',
+    () async {
+      brokenChapter = true;
+      await expectLater(
+        library.readChapter(edition, edition.chapters.first),
+        throwsA(isA<HttpException>()),
+      );
+      expect(library.status(edition).error, isNull);
+      brokenChapter = false;
+      final content = await library.readChapter(
+        edition,
+        edition.chapters.first,
+      );
+      expect(content.html, original);
+      expect(content.offline, false);
+      expect(await library.folder(edition).exists(), false);
+    },
+  );
+
+  test(
+    'local server proxies online illustrations and keeps renderer isolated',
+    () async {
+      final renderer = ReaderServer(library)
+        ..edition = edition
+        ..online = true;
+      await renderer.start();
+      addTearDown(renderer.close);
+      final client = HttpClient();
+      addTearDown(() => client.close(force: true));
+      final uri = renderer.uri.replace(path: '/assets/images/lotm/test.webp');
+      var response = await (await client.getUrl(uri)).close();
+      expect(response.statusCode, 200);
+      expect(
+        response.headers.value('Content-Security-Policy'),
+        contains("img-src 'self' data:"),
+      );
+      expect(
+        await response.fold<List<int>>([], (a, b) => a..addAll(b)),
+        isNotEmpty,
+      );
+      expect(requests['/assets/images/lotm/test.webp'], 1);
+      expect(await library.folder(edition).exists(), false);
+      brokenImage = true;
+      response = await (await client.getUrl(uri)).close();
+      expect(response.statusCode, 404);
+      await response.drain<void>();
+      renderer.online = false;
+      final count = requests['/assets/images/lotm/test.webp'];
+      response = await (await client.getUrl(uri)).close();
+      expect(response.statusCode, 404);
+      await response.drain<void>();
+      expect(requests['/assets/images/lotm/test.webp'], count);
+      response = await (await client.getUrl(uri.replace(query: ''))).close();
+      expect(response.statusCode, 403);
+      await response.drain<void>();
+    },
+  );
+
   test(
     'downloads exact online HTML and assets; reopening and full-text search work with source offline',
     () async {
@@ -83,6 +186,20 @@ void main() {
       expect(requests['/assets/images/lotm/test.webp'], 1);
       expect(await library.verify(edition), true);
       await source.close(force: true);
+      final content = await library.readChapter(
+        edition,
+        edition.chapters.first,
+      );
+      expect(content.html, original);
+      expect(content.offline, true);
+      expect(
+        await library.readIllustration(
+          edition,
+          '/assets/images/lotm/test.webp',
+          online: false,
+        ),
+        isNotNull,
+      );
       final reopened = LibraryStore(library.root, [
         edition,
       ], source: library.source);

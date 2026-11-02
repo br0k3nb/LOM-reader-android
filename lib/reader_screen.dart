@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,6 +8,8 @@ import 'library_store.dart';
 import 'models.dart';
 import 'reader_server.dart';
 import 'state_store.dart';
+import 'cloud_sync.dart';
+import 'design.dart';
 
 class ReaderScreen extends StatefulWidget {
   const ReaderScreen({
@@ -15,11 +18,13 @@ class ReaderScreen extends StatefulWidget {
     required this.state,
     required this.edition,
     required this.chapter,
+    this.sync,
   });
   final LibraryStore library;
   final StateStore state;
   final Edition edition;
   final Chapter chapter;
+  final CloudSync? sync;
   @override
   State<ReaderScreen> createState() => _ReaderScreenState();
 }
@@ -33,6 +38,7 @@ class _ReaderScreenState extends State<ReaderScreen>
   bool loading = true;
   bool ready = false;
   bool fullscreen = false;
+  bool offline = false;
   String? error;
   int generation = 0;
 
@@ -97,44 +103,38 @@ class _ReaderScreenState extends State<ReaderScreen>
   }
 
   Future<void> _open(Edition nextEdition, Chapter next) async {
-    if (!widget.library.status(nextEdition).complete) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Download this translation in the Library first.'),
-          ),
-        );
-      }
-      return;
-    }
     await _flushProgress();
     final currentGeneration = ++generation;
     if (mounted) {
       setState(() {
         loading = true;
         error = null;
+        edition = nextEdition;
+        chapter = next;
       });
     }
     try {
-      final html = await widget.library
-          .chapterFile(nextEdition, next.slug)
-          .readAsString();
+      final content = await widget.library.readChapter(nextEdition, next);
       if (!mounted || currentGeneration != generation) return;
       edition = nextEdition;
       chapter = next;
       server.edition = edition;
+      server.online = !content.offline;
+      offline = content.offline;
       final saved = widget.state.progress[edition.key];
       final ratio = saved is Map && saved['slug'] == next.slug
           ? saved['scrollRatio']
           : 0;
       await controller.runJavaScript(
-        'window.openChapter(${jsonEncode({...next.toJson(), 'html': html, 'scrollRatio': ratio, 'settings': widget.state.settings})});',
+        'window.openChapter(${jsonEncode({...next.toJson(), 'html': content.html, 'scrollRatio': ratio, 'settings': widget.state.settings})});',
       );
       if (mounted) setState(() {});
     } catch (e) {
       if (mounted && currentGeneration == generation) {
         setState(() {
-          error = 'Unable to open the saved chapter: $e';
+          error = widget.library.status(nextEdition).complete
+              ? 'Unable to open the downloaded chapter. Verify this edition in Downloads and resume it to repair missing files.'
+              : 'Unable to load this chapter online. Check your connection and retry, or download the edition for offline reading.';
           loading = false;
         });
       }
@@ -161,7 +161,17 @@ class _ReaderScreenState extends State<ReaderScreen>
               ) &&
               ratio is num &&
               ratio.isFinite) {
-            await widget.state.saveProgress(key, slug as int, ratio);
+            final scroll = message['scroll'];
+            final offset = scroll is num && scroll.isFinite
+                ? scroll.clamp(0, 100000000)
+                : 0;
+            await widget.state.saveProgress(
+              key,
+              slug as int,
+              ratio,
+              scroll: offset,
+            );
+            await widget.sync?.record(key, slug, offset);
           }
         case 'settings':
           final next = StateStore.validate({
@@ -262,7 +272,7 @@ class _ReaderScreenState extends State<ReaderScreen>
   }
 
   Future<void> _flushProgress() async {
-    if (!ready || loading) return;
+    if (!ready || loading || error != null) return;
     try {
       final result = await controller.runJavaScriptReturningResult(
         'Math.min(1,Math.max(0,window.scrollY/Math.max(1,document.documentElement.scrollHeight-window.innerHeight)))',
@@ -270,6 +280,7 @@ class _ReaderScreenState extends State<ReaderScreen>
       final ratio = result is num ? result : num.tryParse(result.toString());
       if (ratio != null && ratio.isFinite) {
         await widget.state.saveProgress(edition.key, chapter.slug, ratio);
+        if (widget.sync != null) unawaited(widget.sync!.synchronize());
       }
     } catch (_) {
       /* The scroll channel has already persisted the last checkpoint. */
@@ -313,18 +324,30 @@ class _ReaderScreenState extends State<ReaderScreen>
       appBar: fullscreen
           ? null
           : AppBar(
-              title: Text(
-                '${edition.book.toUpperCase()} · Chapter ${chapter.slug}',
-                style: const TextStyle(fontSize: 16),
+              title: AnimatedSwitcher(
+                duration: MediaQuery.disableAnimationsOf(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 220),
+                child: Text(
+                  '${edition.book.toUpperCase()} · Chapter ${chapter.slug}',
+                  key: ValueKey(chapter.key),
+                  style: const TextStyle(fontSize: 16),
+                ),
               ),
               actions: [
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8),
-                  child: Icon(Icons.offline_pin_outlined, size: 20),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Tooltip(
+                    message: offline ? 'Reading offline' : 'Reading online',
+                    child: Icon(
+                      offline ? Icons.offline_pin_outlined : Icons.public,
+                      size: 20,
+                    ),
+                  ),
                 ),
                 IconButton(
                   tooltip: 'Bookmark and note',
-                  onPressed: _bookmark,
+                  onPressed: loading || error != null ? null : _bookmark,
                   icon: Icon(
                     widget.state.bookmarks.containsKey(chapter.key)
                         ? Icons.bookmark
@@ -336,28 +359,63 @@ class _ReaderScreenState extends State<ReaderScreen>
       body: SafeArea(
         child: Stack(
           children: [
-            WebViewWidget(controller: controller),
+            AnimatedOpacity(
+              opacity: loading || error != null ? 0 : 1,
+              duration: MediaQuery.disableAnimationsOf(context)
+                  ? Duration.zero
+                  : const Duration(milliseconds: 240),
+              child: WebViewWidget(controller: controller),
+            ),
             if (loading)
-              const Align(
-                alignment: Alignment.topCenter,
-                child: LinearProgressIndicator(),
-              ),
-            if (error != null)
-              Center(
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
+              Positioned.fill(
+                child: ColoredBox(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  child: Center(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(error!),
-                        const SizedBox(height: 16),
-                        FilledButton(
-                          onPressed: () =>
-                              ready ? _open(edition, chapter) : _start(),
-                          child: const Text('Retry'),
+                        Image.asset(
+                          'assets/brand/seer.webp',
+                          width: 64,
+                          height: 64,
+                        ),
+                        const SizedBox(height: 24),
+                        const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        const SizedBox(height: 18),
+                        Text(
+                          'Opening chapter ${chapter.slug}',
+                          style: const TextStyle(color: muted, fontSize: 13),
                         ),
                       ],
+                    ),
+                  ),
+                ),
+              ),
+            if (error != null)
+              Positioned.fill(
+                child: ColoredBox(
+                  color: Theme.of(context).scaffoldBackgroundColor,
+                  child: Center(
+                    child: Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(error!),
+                            const SizedBox(height: 16),
+                            FilledButton(
+                              onPressed: () =>
+                                  ready ? _open(edition, chapter) : _start(),
+                              child: const Text('Retry'),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),

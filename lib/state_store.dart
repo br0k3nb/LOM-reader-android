@@ -17,6 +17,21 @@ class StateStore extends ChangeNotifier {
   Map<String, dynamic> get bookmarks =>
       data['bookmarks'] as Map<String, dynamic>;
   Map<String, dynamic> get settings => data['settings'] as Map<String, dynamic>;
+  String get owner => data['progressOwner'] as String? ?? 'anonymous';
+
+  Future<void> switchProfile(String nextOwner) async {
+    if (owner == nextOwner) return;
+    final profiles =
+        data.putIfAbsent('profiles', () => <String, dynamic>{}) as Map;
+    final previous = owner;
+    profiles[previous] = Map<String, dynamic>.from(progress);
+    data['progress'] = Map<String, dynamic>.from(
+      profiles[nextOwner] as Map? ??
+          (previous == 'anonymous' ? progress : <String, dynamic>{}),
+    );
+    data['progressOwner'] = nextOwner;
+    await persist();
+  }
 
   Future<void> load() async {
     if (await file.exists()) {
@@ -47,6 +62,22 @@ class StateStore extends ChangeNotifier {
           p['scrollRatio'] < 0 ||
           p['scrollRatio'] > 1) {
         throw const FormatException('Invalid chapter progress in backup.');
+      }
+    }
+    if (value['progressOwner'] != null && value['progressOwner'] is! String) {
+      throw const FormatException('Invalid account scope.');
+    }
+    if (value['profiles'] != null) {
+      if (value['profiles'] is! Map<String, dynamic>) {
+        throw const FormatException('Invalid account profiles.');
+      }
+      for (final profile in (value['profiles'] as Map).values) {
+        validate({
+          'version': 1,
+          'progress': profile,
+          'bookmarks': <String, dynamic>{},
+          'settings': <String, dynamic>{},
+        });
       }
     }
     for (final entry in (value['bookmarks'] as Map).entries) {
@@ -131,11 +162,24 @@ class StateStore extends ChangeNotifier {
     await persist();
   }
 
-  Future<void> saveProgress(String edition, int slug, num ratio) {
+  Future<void> saveProgress(
+    String edition,
+    int slug,
+    num ratio, {
+    num? scroll,
+  }) {
+    final existing = progress[edition];
+    final offset =
+        scroll ??
+        (existing is Map && existing['slug'] == slug
+            ? existing['scroll'] as num? ?? 0
+            : 0);
     progress[edition] = {
       'slug': slug,
       'scrollRatio': ratio.clamp(0, 1),
       'updatedAt': DateTime.now().millisecondsSinceEpoch,
+      'scroll': offset.round().clamp(0, 100000000),
+      'pageIndex': (offset / 800).floor().clamp(0, 10000000),
     };
     return persist();
   }
