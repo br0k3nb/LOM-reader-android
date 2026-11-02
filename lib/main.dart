@@ -11,6 +11,9 @@ import 'background_downloads.dart';
 import 'chapter_list.dart';
 import 'cloud_sync.dart';
 import 'design.dart';
+import 'habit_store.dart';
+import 'progress_screen.dart';
+import 'reading_reminders.dart';
 import 'library_store.dart';
 import 'models.dart';
 import 'reader_api.dart';
@@ -48,8 +51,11 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
   BackgroundDownloads? downloads;
   AuthStore? auth;
   CloudSync? sync;
+  HabitStore? habits;
+  ReadingReminders? reminders;
   String? error;
   int tab = 0;
+  bool? notificationsAllowed;
   StorageUsage usage = const StorageUsage();
   Timer? _storageTimer;
   bool _measuring = false;
@@ -84,11 +90,18 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
         File('${dir.path}/reading-sync.json'),
       );
       await cloud.initialize();
+      final habitFile = File('${dir.path}/habits.json');
+      final habitStore = HabitStore(habitFile);
+      await habitStore.load();
+      final reminderService = ReadingReminders();
+      unawaited(reminderService.sync(habitStore));
+      final allowed = await reminderService.notificationsAllowed();
       if (!mounted) {
         tasks.dispose();
         cloud.dispose();
         account.api.dispose();
         account.dispose();
+        habitStore.dispose();
         books.dispose();
         state.dispose();
         return;
@@ -98,12 +111,16 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
       downloads = tasks;
       auth = account;
       sync = cloud;
+      habits = habitStore;
+      reminders = reminderService;
+      notificationsAllowed = allowed;
       _lastAccount = account.userId;
       books.addListener(_refresh);
       state.addListener(_refresh);
       tasks.addListener(_refresh);
       account.addListener(_accountChanged);
       cloud.addListener(_refresh);
+      habitStore.addListener(_habitChanged);
       setState(() {});
       await _measure();
       _storageTimer = Timer.periodic(const Duration(seconds: 6), (_) {
@@ -121,6 +138,42 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
       unawaited(sync!.activate());
     }
     _refresh();
+  }
+
+  /// Habit activity records land here: surface celebrations in the UI and
+  /// re-schedule reminders (today's reminder disappears once the goal is
+  /// met). Cheap when nothing was celebrated.
+  void _habitChanged() {
+    final store = habits;
+    if (store == null) return;
+    final celebrations = store.consumeCelebrations();
+    if (celebrations.isNotEmpty) {
+      _notifyCelebrations(celebrations);
+      unawaited(reminders?.postCelebrations(store, celebrations));
+      unawaited(reminders?.sync(store));
+    }
+    _refresh();
+  }
+
+  void _notifyCelebrations(List<String> celebrations) {
+    final parts = <String>[];
+    for (final event in celebrations) {
+      if (event == 'goal') {
+        parts.add('Daily goal complete — streak safe for today');
+      } else if (event.startsWith('level:')) {
+        final level = int.tryParse(event.substring(6));
+        if (level != null) {
+          parts.add('Level $level · ${levelTitle(level)} reached');
+        }
+      } else if (event.startsWith('achievement:')) {
+        final id = event.substring('achievement:'.length);
+        final matches = achievements.where((a) => a.id == id);
+        if (matches.isNotEmpty) {
+          parts.add('Achievement unlocked: ${matches.first.title}');
+        }
+      }
+    }
+    if (parts.isNotEmpty) _notice(parts.join(' · '));
   }
 
   void _refresh() {
@@ -155,6 +208,13 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
       _measure();
       auth?.refresh();
       sync?.synchronize();
+      final store = habits;
+      if (store != null) unawaited(reminders?.sync(store));
+      reminders?.notificationsAllowed().then((allowed) {
+        if (mounted && notificationsAllowed != allowed) {
+          setState(() => notificationsAllowed = allowed);
+        }
+      });
     }
   }
 
@@ -169,6 +229,7 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
           edition: edition,
           chapter: chapter,
           sync: sync,
+          habits: habits,
         ),
       ),
     );
@@ -196,7 +257,7 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
   }
 
   void _all() {
-    setState(() => tab = 2);
+    setState(() => tab = 3);
     _download(library!.editions);
   }
 
@@ -291,6 +352,71 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
     ),
   );
 
+  static String _formatTime(String value) {
+    final parts = value.split(':');
+    final h = int.tryParse(parts.first) ?? 20;
+    final m = parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0;
+    final period = h >= 12 ? 'PM' : 'AM';
+    final hour12 = h % 12 == 0 ? 12 : h % 12;
+    return '$hour12:${m.toString().padLeft(2, '0')} $period';
+  }
+
+  Future<void> _setGoal(String goal) async {
+    await habits?.setGoal(goal);
+    if (habits != null) await reminders?.sync(habits!);
+  }
+
+  Future<void> _setReminders(bool enabled) async {
+    await habits?.setRemindersEnabled(enabled);
+    if (habits == null) return;
+    if (enabled) {
+      final allowed = await reminders?.requestPermission() ?? true;
+      if (mounted) setState(() => notificationsAllowed = allowed);
+      if (!allowed && mounted) {
+        _notice(
+          'Enable notifications in Android settings to receive reminders.',
+        );
+      }
+    }
+    await reminders?.sync(habits!);
+  }
+
+  Future<void> _setWinBack(bool enabled) async {
+    await habits?.setWinBackEnabled(enabled);
+    if (habits != null) await reminders?.sync(habits!);
+  }
+
+  Future<void> _chooseReminderTime() async {
+    final current = habits?.reminderTime ?? defaultReminderTime;
+    final parts = current.split(':');
+    final initial = TimeOfDay(
+      hour: int.tryParse(parts.first) ?? 20,
+      minute: parts.length > 1 ? int.tryParse(parts[1]) ?? 0 : 0,
+    );
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: initial,
+      helpText: 'Daily reading reminder',
+    );
+    if (picked == null) return;
+    final value =
+        '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+    await habits?.setReminderTime(value);
+    if (habits != null) await reminders?.sync(habits!);
+  }
+
+  Future<void> _requestNotificationPermission() async {
+    final allowed = await reminders?.requestPermission() ?? true;
+    if (mounted) setState(() => notificationsAllowed = allowed);
+    if (allowed && habits != null) {
+      await reminders?.sync(habits!);
+    } else if (mounted) {
+      _notice(
+        'Notifications are still blocked. Enable them in Android settings.',
+      );
+    }
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
@@ -300,8 +426,10 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
     downloads?.removeListener(_refresh);
     auth?.removeListener(_accountChanged);
     sync?.removeListener(_refresh);
+    habits?.removeListener(_habitChanged);
     downloads?.dispose();
     sync?.dispose();
+    habits?.dispose();
     auth?.api.dispose();
     auth?.dispose();
     library?.dispose();
@@ -337,7 +465,7 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
         ),
       );
     }
-    final titles = ['Library', 'Bookmarks', 'Downloads', 'Settings'];
+    final titles = ['Library', 'Progress', 'Bookmarks', 'Downloads', 'Settings'];
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -351,6 +479,47 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
           ],
         ),
         actions: [
+          if (habits != null) ...[
+            Tooltip(
+              message: 'Reading streak — open Progress',
+              child: InkWell(
+                borderRadius: BorderRadius.circular(50),
+                onTap: () => setState(() => tab = 1),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    color: gold.withValues(alpha: .10),
+                    borderRadius: BorderRadius.circular(50),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.local_fire_department,
+                        size: 16,
+                        color: habits!.currentStreak() > 0
+                            ? const Color(0xffe8a54b)
+                            : muted,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${habits!.currentStreak()}',
+                        style: const TextStyle(
+                          color: gold,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 4),
+          ],
           IconButton(
             tooltip: auth!.user == null
                 ? 'Sign in to sync reading'
@@ -389,8 +558,14 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
             key: ValueKey(tab),
             child: switch (tab) {
               0 => _library(),
-              1 => _bookmarks(),
-              2 => _downloads(),
+              1 => habits != null
+                  ? ProgressScreen(
+                      habits: habits!,
+                      onOpenSettings: () => setState(() => tab = 4),
+                    )
+                  : const SizedBox.shrink(),
+              2 => _bookmarks(),
+              3 => _downloads(),
               _ => _settings(),
             },
           ),
@@ -401,13 +576,18 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
         onDestinationSelected: (value) {
           HapticFeedback.selectionClick();
           setState(() => tab = value);
-          if (value == 2 || value == 3) _measure();
+          if (value == 3 || value == 4) _measure();
         },
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.auto_stories_outlined),
             selectedIcon: Icon(Icons.auto_stories),
             label: 'Library',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.local_fire_department_outlined),
+            selectedIcon: Icon(Icons.local_fire_department),
+            label: 'Progress',
           ),
           NavigationDestination(
             icon: Icon(Icons.bookmark_border),
@@ -482,6 +662,62 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
           ),
         ),
       ),
+      if (habits != null)
+        MotionEntry(
+          delay: 40,
+          child: ReaderPanel(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: InkWell(
+              onTap: () => setState(() => tab = 1),
+              borderRadius: BorderRadius.circular(16),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.local_fire_department,
+                    size: 26,
+                    color: habits!.currentStreak() > 0
+                        ? const Color(0xffe8a54b)
+                        : const Color(0xff4b5a66),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              '${habits!.currentStreak()}-day streak',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              '${habits!.todayXp}/${habits!.goalTargetXp} XP today',
+                              style: const TextStyle(color: muted, fontSize: 11),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: LinearProgressIndicator(
+                            value: habits!.todayGoalProgress,
+                            minHeight: 4,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  const Icon(Icons.chevron_right, size: 20, color: muted),
+                ],
+              ),
+            ),
+          ),
+        ),
       const SectionLabel('Your novels'),
       for (final book in ['lotm', 'coi'])
         MotionEntry(
@@ -494,7 +730,7 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
           child: ReaderPanel(
             accent: true,
             child: InkWell(
-              onTap: () => setState(() => tab = 2),
+              onTap: () => setState(() => tab = 3),
               borderRadius: BorderRadius.circular(16),
               child: Row(
                 children: [
@@ -938,6 +1174,125 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
           ),
         ),
       ),
+      if (habits != null) ...[
+        const SectionLabel('Daily goal & reminders'),
+        MotionEntry(
+          delay: 90,
+          child: ReaderPanel(
+            padding: EdgeInsets.zero,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const ListTile(
+                  leading: Icon(
+                    Icons.local_fire_department,
+                    color: gold,
+                  ),
+                  title: Text('Daily goal'),
+                  subtitle: Text(
+                    'Pick a pace you can keep. Pages earn 2 XP, chapters earn 25.',
+                    style: TextStyle(color: muted, fontSize: 12),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final entry in dailyGoals.entries)
+                        ChoiceChip(
+                          label: Text(
+                            '${entry.value.label} · ${entry.value.xp} XP',
+                          ),
+                          selected: habits!.goal == entry.key,
+                          onSelected: (selected) {
+                            if (selected) unawaited(_setGoal(entry.key));
+                          },
+                        ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                  child: Text(
+                    dailyGoals[habits!.goal]!.hint,
+                    style: const TextStyle(color: muted, fontSize: 11),
+                  ),
+                ),
+                const Divider(indent: 20, endIndent: 20),
+                SwitchListTile(
+                  secondary: const Icon(
+                    Icons.notifications_active_outlined,
+                    color: gold,
+                  ),
+                  title: const Text('Daily reminder'),
+                  subtitle: Text(
+                    habits!.remindersEnabled
+                        ? 'Every day at ${_formatTime(habits!.reminderTime)}'
+                        : 'Off — enable to stay on track',
+                    style: const TextStyle(color: muted, fontSize: 12),
+                  ),
+                  value: habits!.remindersEnabled,
+                  onChanged: (value) => unawaited(_setReminders(value)),
+                ),
+                if (habits!.remindersEnabled)
+                  ListTile(
+                    leading: const Icon(Icons.schedule, color: gold),
+                    title: const Text('Reminder time'),
+                    subtitle: Text(
+                      _formatTime(habits!.reminderTime),
+                      style: const TextStyle(color: muted, fontSize: 12),
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => unawaited(_chooseReminderTime()),
+                  ),
+                SwitchListTile(
+                  secondary: const Icon(
+                    Icons.mark_email_unread_outlined,
+                    color: gold,
+                  ),
+                  title: const Text('Come-back nudge'),
+                  subtitle: const Text(
+                    'Remind me after 2 days away from the reader',
+                    style: TextStyle(color: muted, fontSize: 12),
+                  ),
+                  value: habits!.winBackEnabled,
+                  onChanged: (value) => unawaited(_setWinBack(value)),
+                ),
+                if (notificationsAllowed == false)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+                    child: Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Android notifications are blocked for this app.',
+                            style: TextStyle(color: muted, fontSize: 12),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () =>
+                              unawaited(_requestNotificationPermission()),
+                          child: const Text('Enable'),
+                        ),
+                      ],
+                    ),
+                  ),
+                const Divider(indent: 20, endIndent: 20),
+                ListTile(
+                  leading: const Icon(Icons.ac_unit, color: frost),
+                  title: const Text('Streak freezes'),
+                  subtitle: Text(
+                    '${habits!.freezes} banked · earned every 10 streak days,\nused automatically to bridge one missed day.',
+                    style: const TextStyle(color: muted, fontSize: 12),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
       const SectionLabel('Storage'),
       MotionEntry(delay: 120, child: StorageCard(usage, onRefresh: _measure)),
       const SectionLabel('About'),

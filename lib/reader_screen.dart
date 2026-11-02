@@ -9,6 +9,7 @@ import 'models.dart';
 import 'reader_server.dart';
 import 'state_store.dart';
 import 'cloud_sync.dart';
+import 'habit_store.dart';
 import 'design.dart';
 
 class ReaderScreen extends StatefulWidget {
@@ -19,12 +20,14 @@ class ReaderScreen extends StatefulWidget {
     required this.edition,
     required this.chapter,
     this.sync,
+    this.habits,
   });
   final LibraryStore library;
   final StateStore state;
   final Edition edition;
   final Chapter chapter;
   final CloudSync? sync;
+  final HabitStore? habits;
   @override
   State<ReaderScreen> createState() => _ReaderScreenState();
 }
@@ -172,6 +175,12 @@ class _ReaderScreenState extends State<ReaderScreen>
               scroll: offset,
             );
             await widget.sync?.record(key, slug, offset);
+            await widget.habits?.recordReading(
+              edition: key,
+              slug: slug,
+              ratio: ratio,
+              scroll: offset,
+            );
           }
         case 'settings':
           final next = StateStore.validate({
@@ -280,6 +289,11 @@ class _ReaderScreenState extends State<ReaderScreen>
       final ratio = result is num ? result : num.tryParse(result.toString());
       if (ratio != null && ratio.isFinite) {
         await widget.state.saveProgress(edition.key, chapter.slug, ratio);
+        await widget.habits?.recordReading(
+          edition: edition.key,
+          slug: chapter.slug,
+          ratio: ratio,
+        );
         if (widget.sync != null) unawaited(widget.sync!.synchronize());
       }
     } catch (_) {

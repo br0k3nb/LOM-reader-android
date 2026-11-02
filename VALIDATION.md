@@ -1,5 +1,21 @@
 # Validation
 
+## Addendum 2026-11-02 — Duolingo-style streaks, goals and reminders
+
+Verified locally with Flutter 3.47.5 / Dart 3.13.4 and the installed Java SDK.
+
+- `flutter analyze --no-pub`: no issues.
+- Local Flutter suite: **51 tests pass** (the 12 offline/background tests and the 11 account/UI tests are unchanged; 28 new habit/reminder tests in `test/habit_test.dart`). New coverage includes XP with per-day page floors and cross-day re-read counting, once-per-chapter XP bonuses, linear level costs and titles, once-per-day goal celebration across reload, streak runs over backfilled dated reads, automatic streak freezes for gaps no larger than the bank (including the at-load reconcile), no-spend behaviour for gaps larger than the bank, milestone freeze awards (one per 10 streak days, max 2), achievements, persistence round trips, corruption backup-and-reset, invalid-value fallbacks in `habits.json`, the seven-day one-shot reminder plan (today skipped after the goal is met or the time has passed), the 48-hour come-back nudge plan, strict reminder-time validation, and a widget smoke test of the Progress tab.
+- One defect found and fixed during testing: the freeze reconcile originally ran after today's activity was recorded, so a fresh read masked the missed-day gap; missed days are now bridged from the last active day **before** today, at record time and at app load. Another: a down-level expectation error in the chapter-bonus test (opening a chapter counts its first page, same as account sync).
+- `git diff --check`: passes.
+- Reminders use the device IANA timezone with inexact alarms (no exact-alarm permission); a rolling seven-day window of one-shot reminders is rescheduled on every launch/resume, after settings changes, and whenever a celebration fires (which also cancels today's reminder). `POST_NOTIFICATIONS` was already declared for the download alerts; the reminders toggle requests permission at toggle time, and the Settings section shows an **Enable** button if alerts are blocked.
+- Habit data is device-local by design (like bookmarks and reader settings): excluded from reading backups and from account sync. The app does not send it anywhere.
+- Release APK builds cleanly with the new `timezone`/`flutter_timezone` plugins wired in: `flutter build apk --release --no-pub` completes (`build/app/outputs/flutter-apk/app-release.apk`, ~59 MB). On-device notification delivery and OEM battery behaviour are not verified; notification permission flows are exercised only through mocked plugin channels in `test/background_test.dart` conventions.
+
+Everything below this section documents the 2026-10-01 run and remains accurate for the untouched parts (renderer, downloads, accounts).
+
+---
+
 Verified on 2026-10-01 using Flutter 3.47.5, Dart 3.13.4, Android SDK 36, and the installed Java SDK.
 
 Repository isolation: moved to `LOTM-Reader-Android`, initialized its own Git repository, installed JavaScript dependencies from its own lockfile, and rebuilt its renderer from the included source snapshot. No sibling checkout or external source symlink is used. The original website repository's tracked files were restored.

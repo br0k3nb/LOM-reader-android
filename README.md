@@ -29,6 +29,20 @@ The opaque website session is stored with Android Keystore-backed secure storage
 
 **Google requires a one-time Android OAuth registration in the same Google Cloud project as the website.** This repository includes the deployed site's public web client ID, but Android's package and signing certificate must also be registered. Exact settings, this APK's SHA fingerprints, distribution-key instructions, and primary documentation are in [GOOGLE_SIGN_IN.md](GOOGLE_SIGN_IN.md). Email sign-in uses the deployed server directly and does not need Android OAuth registration.
 
+## Streaks, goals and reminders
+
+The app includes a Duolingo-style reading habit system that rewards steady reading.
+
+- **XP**: one logical page (800px, the same unit account sync uses) earns 2 XP. Finishing a chapter earns 25 XP, once per chapter. Opening a chapter counts its first page.
+- **Daily goal**: Casual 20 XP, Regular 50 XP (default), Serious 100 XP, or Intense 200 XP. Change it in **Settings → Daily goal & reminders**.
+- **Streaks**: a day counts once you read at least one page. Missed days are bridged automatically by a **streak freeze** — new readers start with one, earn one more every 10 streak days, and bank at most two. Freezes are never spent on gaps larger than what you have banked.
+- **Levels**: XP costs grow linearly per level, from Newcomer to Mystic and beyond.
+- **Achievements**: 16 badges for XP, chapters, streaks, and freezes.
+- **Progress tab**: a flame streak hero with your freeze count, today's goal ring, level progress bar, a weekly XP chart, a five-week calendar (gold = read, ice = freeze used, empty = missed), and the achievements grid. The Library tab shows your streak and today's goal in a compact strip, and the app bar shows your current streak.
+- **Notifications**: a daily reminder at a time you choose (default 8:00 PM), scheduled seven days ahead as inexact alarms (no exact-alarm permission needed) and skipped for today once your goal is met; a **come-back nudge** after two days away (on by default); and celebration alerts when you complete the daily goal, level up, or unlock an achievement. Reminders and nudges are opt-out toggles in **Settings → Daily goal & reminders**, where you can also change the reminder time. On Android 13+ the toggle requests notification permission; if alerts are blocked, that section offers an **Enable** button.
+- Habit data is **local to the device**, like bookmarks and reader settings: it is not included in reading backups and does not sync between accounts. Progress that seals chapters offline counts exactly the same as online reading, because it is measured from the same reading position stream.
+- Activity is persisted atomically in `habits.json` (corruption-safe: an unreadable file is backed up and reset instead of blocking the app). Reminders use the device's IANA timezone; alarms are rescheduled on every launch and resume.
+
 ## Independent repository and rendering
 
 This repository is independent of the website repository. It includes its own Flutter project, Android integration, renderer source, fonts, catalog, JavaScript dependency lockfile, tests, and CI workflow. Building it does not require a sibling website checkout, symlink, submodule, or website deployment.
@@ -80,7 +94,7 @@ The default release APK uses the development signing key for installation/testin
 
 `test/offline_test.dart` tests online reading for every edition without downloaded files, online retries, reading while downloads are paused, online illustration proxying, exact downloaded HTML, pause/resume, reopening with the source stopped, local text search, missing illustrations, corruption repair, atomic state writes, and backup validation. It uses a local HTTP fixture.
 
-`test/background_test.dart` runs the actual Dart download task with mocked Android plugin channels and a local HTTP source: UI disposal, durable completion, completion alerts, notification Pause, and restarting from saved checkpoints. `test/account_test.dart` checks website session exchange, secure session restoration, offline identity, local sign-out, page deduplication, account separation, and newer-position merging. `test/ui_test.dart` checks phone/tablet layouts with enlarged text, reduced motion, and storage accounting; it exports local previews under `build/ui-preview/`.
+`test/background_test.dart` runs the actual Dart download task with mocked Android plugin channels and a local HTTP source: UI disposal, durable completion, completion alerts, notification Pause, and restarting from saved checkpoints. `test/account_test.dart` checks website session exchange, secure session restoration, offline identity, local sign-out, page deduplication, account separation, and newer-position merging. `test/ui_test.dart` checks phone/tablet layouts with enlarged text, reduced motion, and storage accounting; it exports local previews under `build/ui-preview/`. `test/habit_test.dart` checks XP awarding with per-day page floors, chapter-completion bonuses, level math and titles, daily-goal detection with a once-per-day celebration, streak computation, automatic streak freezes (including gaps larger than the bank), milestone freeze awards, achievements, persistence round trips, corruption recovery, reminder scheduling plans for the next seven days, the 48-hour come-back nudge, and a widget smoke test of the Progress screen.
 
 An optional browser comparison checks typography, margins, image dimensions, and rendered height against the actual website at phone and tablet widths. It also checks settings, footnotes, restored position, and zero remote requests:
 
