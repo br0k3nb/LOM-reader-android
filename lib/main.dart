@@ -122,6 +122,8 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
       cloud.addListener(_refresh);
       habitStore.addListener(_habitChanged);
       setState(() {});
+      // Freezes spent while the app was closed are announced now.
+      _habitChanged();
       await _measure();
       _storageTimer = Timer.periodic(const Duration(seconds: 6), (_) {
         if (downloads?.busy == true) _measure();
@@ -155,11 +157,33 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
     _refresh();
   }
 
+  /// Big moments (streak milestones and rescues) wait for the reader to
+  /// close, then get a full celebration dialog on the home screen.
+  final List<String> _pendingMilestones = [];
+
   void _notifyCelebrations(List<String> celebrations) {
     final parts = <String>[];
     for (final event in celebrations) {
       if (event == 'goal') {
-        parts.add('Daily goal complete — streak safe for today');
+        parts.add('Daily goal complete');
+      } else if (event == 'quests') {
+        parts.add('All daily quests done · +$questBonusXp XP');
+      } else if (event.startsWith('streak-extended:')) {
+        final n = int.tryParse(event.substring('streak-extended:'.length));
+        if (n != null) {
+          parts.add(n == 1 ? 'Streak started 🔥' : '$n-day streak 🔥');
+        }
+      } else if (event.startsWith('streak:') || event.startsWith('repaired:')) {
+        _pendingMilestones.add(event);
+      } else if (event.startsWith('freeze-used:')) {
+        final n = int.tryParse(event.substring('freeze-used:'.length)) ?? 1;
+        parts.add(
+          n == 1
+              ? 'A streak freeze covered your missed day'
+              : '$n streak freezes covered your missed days',
+        );
+      } else if (event == 'freeze-earned') {
+        parts.add('Streak freeze earned');
       } else if (event.startsWith('level:')) {
         final level = int.tryParse(event.substring(6));
         if (level != null) {
@@ -174,6 +198,25 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
       }
     }
     if (parts.isNotEmpty) _notice(parts.join(' · '));
+    if (_pendingMilestones.isNotEmpty && !_reading) _showMilestones();
+  }
+
+  bool _reading = false;
+
+  Future<void> _showMilestones() async {
+    while (_pendingMilestones.isNotEmpty && mounted) {
+      final event = _pendingMilestones.removeAt(0);
+      final repaired = event.startsWith('repaired:');
+      final days = int.tryParse(event.substring(event.indexOf(':') + 1));
+      if (days == null) continue;
+      await showDialog<void>(
+        context: context,
+        builder: (context) => StreakCelebrationDialog(
+          days: days,
+          repaired: repaired,
+        ),
+      );
+    }
   }
 
   void _refresh() {
@@ -220,6 +263,7 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
 
   Future<void> _open(Edition edition, Chapter chapter) async {
     HapticFeedback.selectionClick();
+    _reading = true;
     await Navigator.push(
       context,
       MaterialPageRoute<void>(
@@ -233,7 +277,9 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
         ),
       ),
     );
+    _reading = false;
     _refresh();
+    if (_pendingMilestones.isNotEmpty) unawaited(_showMilestones());
   }
 
   void _readEdition(Edition e) {
@@ -501,7 +547,7 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
                         Icons.local_fire_department,
                         size: 16,
                         color: habits!.currentStreak() > 0
-                            ? const Color(0xffe8a54b)
+                            ? streakTier(habits!.currentStreak()).color
                             : muted,
                       ),
                       const SizedBox(width: 4),
@@ -675,9 +721,7 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
                   Icon(
                     Icons.local_fire_department,
                     size: 26,
-                    color: habits!.currentStreak() > 0
-                        ? const Color(0xffe8a54b)
-                        : const Color(0xff4b5a66),
+                    color: streakTier(habits!.currentStreak()).color,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -1284,7 +1328,8 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
                   leading: const Icon(Icons.ac_unit, color: frost),
                   title: const Text('Streak freezes'),
                   subtitle: Text(
-                    '${habits!.freezes} banked · earned every 10 streak days,\nused automatically to bridge one missed day.',
+                    '${habits!.freezes} of $maxFreezes banked · earned every $freezeEveryStreak streak days and used automatically. '
+                    'Missed too many? Earn $rescueGoalMultiplier× your goal the day you return to rescue the streak.',
                     style: const TextStyle(color: muted, fontSize: 12),
                   ),
                 ),

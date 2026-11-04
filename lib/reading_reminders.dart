@@ -29,6 +29,39 @@ List<DateTime> planDailyReminderTimes({
   return result;
 }
 
+/// Reminder wording. Today's reminder knows the live streak (and any
+/// rescue on offer); later reminders in the rolling window stay generic
+/// because the streak may have changed by then.
+({String title, String body}) reminderCopy({
+  required int streak,
+  required bool isToday,
+  int? rescueLength,
+  int? rescueXp,
+}) {
+  if (isToday && rescueLength != null && rescueXp != null) {
+    return (
+      title: 'Rescue your $rescueLength-day streak',
+      body: 'Earn $rescueXp XP before midnight to bring your streak back.',
+    );
+  }
+  if (isToday && streak > 0) {
+    return (
+      title: 'Your $streak-day streak ends at midnight',
+      body: 'A few pages tonight keeps the flame burning.',
+    );
+  }
+  if (!isToday) {
+    return (
+      title: 'Keep your streak alive',
+      body: 'Your story is waiting. A few pages today keeps your streak alive.',
+    );
+  }
+  return (
+    title: 'Start a new streak',
+    body: 'A few pages today begins a brand-new reading streak.',
+  );
+}
+
 /// A come-back nudge [hours] after the last moment the app was in use.
 /// Rescheduled on every sync, so it only fires when the user actually stops
 /// opening the app. Never scheduled for readers who haven't read yet.
@@ -61,6 +94,7 @@ class ReadingReminders {
   static const int goalMetId = 9120;
   static const int levelUpId = 9121;
   static const int achievementId = 9130;
+  static const int milestoneId = 9131;
 
   static const String reminderChannelId = 'reader_reminders';
   static const String celebrationChannelId = 'reader_celebrations';
@@ -179,6 +213,27 @@ class ReadingReminders {
     for (final event in celebrations) {
       if (event == 'goal') {
         await showGoalMet();
+      } else if (event.startsWith('streak:')) {
+        final days = int.tryParse(event.substring('streak:'.length));
+        if (days != null) {
+          await _show(
+            id: milestoneId,
+            title: '$days-day streak!',
+            body:
+                'Your flame is now ${streakTier(days).name}. Next milestone: ${nextStreakMilestone(days)} days.',
+            channelId: celebrationChannelId,
+          );
+        }
+      } else if (event.startsWith('repaired:')) {
+        final days = int.tryParse(event.substring('repaired:'.length));
+        if (days != null) {
+          await _show(
+            id: milestoneId,
+            title: 'Streak rescued',
+            body: 'Your $days-day streak is back. Keep it alive tomorrow.',
+            channelId: celebrationChannelId,
+          );
+        }
       } else if (event.startsWith('level:')) {
         final level = int.tryParse(event.substring('level:'.length));
         if (level != null) {
@@ -217,15 +272,20 @@ class ReadingReminders {
           skipToday: habits.goalMetToday,
           count: reminderWindow,
         );
-        final hasStreak = habits.currentStreak(now: now) > 0;
+        final streak = habits.currentStreak(now: now);
+        final rescue = habits.streakRescue(now: now);
         var index = 0;
         for (final at in times) {
+          final copy = reminderCopy(
+            streak: streak,
+            isToday: dateKey(at) == dateKey(now),
+            rescueLength: rescue?.length,
+            rescueXp: rescue?.targetXp,
+          );
           await _plugin.zonedSchedule(
             id: reminderIdBase + index,
-            title: hasStreak ? 'Keep your streak alive' : 'Start a new streak',
-            body: hasStreak
-                ? 'Your story is waiting. A few pages today keeps your streak alive.'
-                : 'A few pages today begins a brand-new reading streak.',
+            title: copy.title,
+            body: copy.body,
             scheduledDate: tz.TZDateTime.from(at, tz.local),
             notificationDetails:
                 NotificationDetails(android: _details(reminderChannelId)),

@@ -1,5 +1,16 @@
 # Validation
 
+## Addendum 2026-11-04: streak system enhancements
+
+Verified locally with Flutter 3.47.9 / Dart 3.13.x.
+
+- `flutter analyze --no-pub`: no issues.
+- Local Flutter suite: **76 tests pass**. The 51 earlier tests pass unchanged, and `test/streak_test.dart` adds 25.
+- New logic: flame tiers; streak milestones; once-per-day `streak-extended` celebrations; a same-day streak rescue (2× goal, gaps up to 3 days, expires at midnight, rescued days kept separate from freezes); daily quests (goal plus two date-seeded quests, one-time +15 XP bonus); goal streaks; best-day records; usage counters (freezes used, rescues, comebacks, weekends, early-bird/night-owl reads); and 49 achievements (up from 16) with progress tracking and unlock dates.
+- Habit files stay at `version: 1`. New fields are optional and validated, older files load unchanged, and best-day records are backfilled from stored history. Achievement IDs from the previous release are kept.
+- Fixed: the old five-week calendar always labelled its columns M–S, but the grid started 34 days before today, so the weekday headers didn't match the cells. The calendar now uses Monday-aligned weeks, and future days are dimmed.
+- The Progress screen was rendered at 400 px wide (with the bundled Roboto and Material Icons) and checked for layout and overflow. That includes the rescue card and the milestone dialog. On-device behaviour has not been checked.
+
 ## Addendum 2026-11-02 — Duolingo-style streaks, goals and reminders
 
 Verified locally with Flutter 3.47.5 / Dart 3.13.4 and the installed Java SDK.
