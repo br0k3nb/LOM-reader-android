@@ -11,6 +11,7 @@ import 'state_store.dart';
 import 'cloud_sync.dart';
 import 'habit_store.dart';
 import 'design.dart';
+import 'reader_hud.dart';
 
 class ReaderScreen extends StatefulWidget {
   const ReaderScreen({
@@ -408,6 +409,12 @@ class _ReaderScreenState extends State<ReaderScreen>
                     ),
                   ),
                 ),
+              ),
+            if (widget.habits != null && !loading && error == null)
+              Positioned(
+                right: 14,
+                bottom: 18,
+                child: ReaderXpHud(habits: widget.habits!),
               ),
             if (error != null)
               Positioned.fill(

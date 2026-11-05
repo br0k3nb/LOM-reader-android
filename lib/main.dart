@@ -10,12 +10,14 @@ import 'auth_store.dart';
 import 'background_downloads.dart';
 import 'chapter_list.dart';
 import 'cloud_sync.dart';
+import 'celebrations.dart';
 import 'design.dart';
 import 'habit_store.dart';
 import 'progress_screen.dart';
 import 'reading_reminders.dart';
 import 'library_store.dart';
 import 'models.dart';
+import 'motion.dart';
 import 'reader_api.dart';
 import 'reader_screen.dart';
 import 'state_store.dart';
@@ -66,6 +68,7 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    rewardDialogsOpen.addListener(_rewardDialogsChanged);
     _initialize();
   }
 
@@ -165,7 +168,7 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
     final parts = <String>[];
     for (final event in celebrations) {
       if (event == 'goal') {
-        parts.add('Daily goal complete');
+        parts.add('Daily goal complete · mystery chest unlocked');
       } else if (event == 'quests') {
         parts.add('All daily quests done · +$questBonusXp XP');
       } else if (event.startsWith('streak-extended:')) {
@@ -184,38 +187,96 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
         );
       } else if (event == 'freeze-earned') {
         parts.add('Streak freeze earned');
-      } else if (event.startsWith('level:')) {
-        final level = int.tryParse(event.substring(6));
-        if (level != null) {
-          parts.add('Level $level · ${levelTitle(level)} reached');
-        }
-      } else if (event.startsWith('achievement:')) {
-        final id = event.substring('achievement:'.length);
-        final matches = achievements.where((a) => a.id == id);
-        if (matches.isNotEmpty) {
-          parts.add('Achievement unlocked: ${matches.first.title}');
+      } else if (event.startsWith('level:') ||
+          event.startsWith('sequence:') ||
+          event.startsWith('achievement:')) {
+        _pendingMilestones.add(event);
+      } else if (event == 'focus') {
+        parts.add('Focus reached · +$focusBonusPct% XP this session');
+      } else if (event.startsWith('weekly-ready:')) {
+        final i = int.tryParse(event.substring('weekly-ready:'.length));
+        if (i != null && i >= 0 && i < weeklyTiers.length) {
+          parts.add('${weeklyTiers[i].name} weekly reward ready to claim');
         }
       }
     }
     if (parts.isNotEmpty) _notice(parts.join(' · '));
-    if (_pendingMilestones.isNotEmpty && !_reading) _showMilestones();
+    if (_pendingMilestones.isNotEmpty &&
+        !_reading &&
+        rewardDialogsOpen.value == 0) {
+      _showMilestones();
+    }
   }
 
   bool _reading = false;
 
+  bool _showingMilestones = false;
+
+  /// Shows queued big moments one dialog at a time: streak milestones and
+  /// rescues first, then the highest level reached (with any Sequence
+  /// advance), then every newly unlocked achievement together.
   Future<void> _showMilestones() async {
-    while (_pendingMilestones.isNotEmpty && mounted) {
-      final event = _pendingMilestones.removeAt(0);
-      final repaired = event.startsWith('repaired:');
-      final days = int.tryParse(event.substring(event.indexOf(':') + 1));
-      if (days == null) continue;
-      await showDialog<void>(
-        context: context,
-        builder: (context) => StreakCelebrationDialog(
-          days: days,
-          repaired: repaired,
-        ),
-      );
+    if (_showingMilestones) return;
+    _showingMilestones = true;
+    try {
+      while (_pendingMilestones.isNotEmpty && mounted) {
+        final batch = List<String>.from(_pendingMilestones);
+        _pendingMilestones.clear();
+        for (final event in batch) {
+          if (!event.startsWith('streak:') && !event.startsWith('repaired:')) {
+            continue;
+          }
+          final days = int.tryParse(event.substring(event.indexOf(':') + 1));
+          if (days == null || !mounted) continue;
+          await showDialog<void>(
+            context: context,
+            builder: (context) => StreakCelebrationDialog(
+              days: days,
+              repaired: event.startsWith('repaired:'),
+            ),
+          );
+        }
+        int? level;
+        int? sequence;
+        final unlocked = <Achievement>[];
+        for (final event in batch) {
+          final value = event.substring(event.indexOf(':') + 1);
+          if (event.startsWith('level:')) {
+            final n = int.tryParse(value);
+            if (n != null && (level == null || n > level)) level = n;
+          } else if (event.startsWith('sequence:')) {
+            final n = int.tryParse(value);
+            if (n != null && (sequence == null || n < sequence)) sequence = n;
+          } else if (event.startsWith('achievement:')) {
+            final a = achievementById(value);
+            if (a != null) unlocked.add(a);
+          }
+        }
+        if (level != null && mounted) {
+          HapticFeedback.mediumImpact();
+          await showDialog<void>(
+            context: context,
+            builder: (context) =>
+                LevelUpDialog(level: level!, sequence: sequence),
+          );
+        }
+        if (unlocked.isNotEmpty && mounted) {
+          await showDialog<void>(
+            context: context,
+            builder: (context) => AchievementsDialog(unlocked: unlocked),
+          );
+        }
+      }
+    } finally {
+      _showingMilestones = false;
+    }
+  }
+
+  void _rewardDialogsChanged() {
+    if (rewardDialogsOpen.value == 0 &&
+        _pendingMilestones.isNotEmpty &&
+        !_reading) {
+      unawaited(_showMilestones());
     }
   }
 
@@ -466,6 +527,7 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    rewardDialogsOpen.removeListener(_rewardDialogsChanged);
     _storageTimer?.cancel();
     library?.removeListener(_refresh);
     reading?.removeListener(_refresh);
@@ -511,7 +573,14 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
         ),
       );
     }
-    final titles = ['Library', 'Progress', 'Bookmarks', 'Downloads', 'Settings'];
+    final titles = [
+      'Library',
+      'Progress',
+      'Bookmarks',
+      'Downloads',
+      'Settings',
+    ];
+    final rewards = habits?.rewardsWaiting() ?? 0;
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -604,12 +673,14 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
             key: ValueKey(tab),
             child: switch (tab) {
               0 => _library(),
-              1 => habits != null
-                  ? ProgressScreen(
-                      habits: habits!,
-                      onOpenSettings: () => setState(() => tab = 4),
-                    )
-                  : const SizedBox.shrink(),
+              1 =>
+                habits != null
+                    ? ProgressScreen(
+                        habits: habits!,
+                        editions: library!.editions,
+                        onOpenSettings: () => setState(() => tab = 4),
+                      )
+                    : const SizedBox.shrink(),
               2 => _bookmarks(),
               3 => _downloads(),
               _ => _settings(),
@@ -624,28 +695,36 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
           setState(() => tab = value);
           if (value == 3 || value == 4) _measure();
         },
-        destinations: const [
-          NavigationDestination(
+        destinations: [
+          const NavigationDestination(
             icon: Icon(Icons.auto_stories_outlined),
             selectedIcon: Icon(Icons.auto_stories),
             label: 'Library',
           ),
           NavigationDestination(
-            icon: Icon(Icons.local_fire_department_outlined),
-            selectedIcon: Icon(Icons.local_fire_department),
+            icon: Badge(
+              isLabelVisible: rewards > 0,
+              label: Text('$rewards'),
+              child: const Icon(Icons.local_fire_department_outlined),
+            ),
+            selectedIcon: Badge(
+              isLabelVisible: rewards > 0,
+              label: Text('$rewards'),
+              child: const Icon(Icons.local_fire_department),
+            ),
             label: 'Progress',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.bookmark_border),
             selectedIcon: Icon(Icons.bookmark),
             label: 'Bookmarks',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.download_outlined),
             selectedIcon: Icon(Icons.download),
             label: 'Downloads',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.tune_outlined),
             selectedIcon: Icon(Icons.tune),
             label: 'Settings',
@@ -740,23 +819,43 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
                             const Spacer(),
                             Text(
                               '${habits!.todayXp}/${habits!.goalTargetXp} XP today',
-                              style: const TextStyle(color: muted, fontSize: 11),
+                              style: const TextStyle(
+                                color: muted,
+                                fontSize: 11,
+                              ),
                             ),
                           ],
                         ),
                         const SizedBox(height: 8),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: LinearProgressIndicator(
-                            value: habits!.todayGoalProgress,
-                            minHeight: 4,
-                          ),
+                        GlowBar(
+                          value: habits!.todayGoalProgress,
+                          height: 4,
+                          colors: const [Color(0xffb89a5c), Color(0xffffe2a3)],
                         ),
+                        if (habits!.rewardsWaiting() > 0) ...[
+                          const SizedBox(height: 8),
+                          Text(
+                            habits!.chestAvailable()
+                                ? 'Your mystery chest is ready to open'
+                                : 'A weekly reward is ready to claim',
+                            style: const TextStyle(
+                              color: gold,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
                   const SizedBox(width: 10),
-                  const Icon(Icons.chevron_right, size: 20, color: muted),
+                  if (habits!.rewardsWaiting() > 0)
+                    const Pulse(
+                      radius: 50,
+                      child: Icon(Icons.redeem_rounded, size: 22, color: gold),
+                    )
+                  else
+                    const Icon(Icons.chevron_right, size: 20, color: muted),
                 ],
               ),
             ),
@@ -1228,10 +1327,7 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const ListTile(
-                  leading: Icon(
-                    Icons.local_fire_department,
-                    color: gold,
-                  ),
+                  leading: Icon(Icons.local_fire_department, color: gold),
                   title: Text('Daily goal'),
                   subtitle: Text(
                     'Pick a pace you can keep. Pages earn 2 XP, chapters earn 25.',
@@ -1323,6 +1419,16 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
                       ],
                     ),
                   ),
+                SwitchListTile(
+                  secondary: const Icon(Icons.bolt, color: gold),
+                  title: const Text('XP popups while reading'),
+                  subtitle: const Text(
+                    'Show earned XP and goal progress briefly in the reader',
+                    style: TextStyle(color: muted, fontSize: 12),
+                  ),
+                  value: habits!.readerHud,
+                  onChanged: (value) => unawaited(habits!.setReaderHud(value)),
+                ),
                 const Divider(indent: 20, endIndent: 20),
                 ListTile(
                   leading: const Icon(Icons.ac_unit, color: frost),

@@ -31,7 +31,7 @@ const List<String> levelTitles = [
   'Devoted Reader',
   'Pathwalker',
   'Mist Walker',
-  'Seer',
+  'Diviner',
   'Beyonder',
   'Mystic',
 ];
@@ -43,6 +43,63 @@ String levelTitle(int level) => level <= levelTitles.length
 /// XP required to advance from [level] to [level] + 1. Grows linearly so
 /// early levels come quickly and later ones take real dedication.
 int levelCost(int level) => 100 + 50 * (level - 1);
+
+/// Beyonder ranks layered over levels: every three levels advance one
+/// Sequence of the Fool pathway, from Sequence 9 (Seer) to Sequence 0.
+const List<String> sequenceNames = [
+  'Seer',
+  'Clown',
+  'Magician',
+  'Faceless',
+  'Marionettist',
+  'Bizarro Sorcerer',
+  'Scholar of Yore',
+  'Miracle Invoker',
+  'Attendant of Mysteries',
+  'Fool',
+];
+const int levelsPerSequence = 3;
+
+class SequenceRank {
+  const SequenceRank(this.sequence, this.name, this.progress, this.nextName);
+
+  /// 9 (lowest) down to 0 (highest).
+  final int sequence;
+  final String name;
+
+  /// Progress (0–1) toward the next Sequence; 1 at Sequence 0.
+  final double progress;
+  final String? nextName;
+}
+
+SequenceRank sequenceForLevel(LevelInfo info) {
+  final index = ((info.level - 1) ~/ levelsPerSequence).clamp(0, 9);
+  if (index >= 9) return SequenceRank(0, sequenceNames[9], 1, null);
+  final into = (info.level - 1) - index * levelsPerSequence + info.progress;
+  return SequenceRank(
+    9 - index,
+    sequenceNames[index],
+    (into / levelsPerSequence).clamp(0, 1).toDouble(),
+    sequenceNames[index + 1],
+  );
+}
+
+/// Bonus XP percentage granted by each flame tier.
+const Map<String, int> tierXpBonus = {
+  'Unlit': 0,
+  'Spark': 0,
+  'Flame': 10,
+  'Blaze': 20,
+  'Inferno': 35,
+  'Eternal': 50,
+};
+
+/// Reading events closer than this belong to the same session.
+const int sessionGapSeconds = 180;
+
+/// A session reaching this many minutes enters focus and earns [focusBonusPct].
+const int focusMinutes = 15;
+const int focusBonusPct = 25;
 
 class LevelInfo {
   const LevelInfo(this.level, this.xpIntoLevel, this.xpForNextLevel);
@@ -98,7 +155,7 @@ class DayActivity {
   String get key => dateKey(date);
 }
 
-enum AchievementCategory { streak, reading, xp, goals, habits }
+enum AchievementCategory { streak, reading, xp, goals, habits, time, rewards }
 
 const Map<AchievementCategory, String> achievementCategoryLabels = {
   AchievementCategory.streak: 'Streaks',
@@ -106,6 +163,8 @@ const Map<AchievementCategory, String> achievementCategoryLabels = {
   AchievementCategory.xp: 'XP & levels',
   AchievementCategory.goals: 'Goals & quests',
   AchievementCategory.habits: 'Habits',
+  AchievementCategory.time: 'Time & focus',
+  AchievementCategory.rewards: 'Rewards',
 };
 
 /// An achievement unlocks once [metric] (see [HabitStore.metricValue])
@@ -131,153 +190,597 @@ class Achievement {
 
 const List<Achievement> achievements = [
   // Streaks.
-  Achievement('streak-3', 'Three-Day Streak', 'Read on 3 days in a row',
-      Icons.local_fire_department_outlined,
-      category: AchievementCategory.streak, metric: 'longestStreak', target: 3),
-  Achievement('streak-7', 'Week of Reading', 'Reach a 7-day streak',
-      Icons.local_fire_department_outlined,
-      category: AchievementCategory.streak, metric: 'longestStreak', target: 7),
-  Achievement('streak-14', 'Fortnight Flame', 'Reach a 14-day streak',
-      Icons.local_fire_department_outlined,
-      category: AchievementCategory.streak, metric: 'longestStreak', target: 14),
-  Achievement('streak-30', 'Month of the Seer', 'Reach a 30-day streak',
-      Icons.local_fire_department,
-      category: AchievementCategory.streak, metric: 'longestStreak', target: 30),
-  Achievement('streak-50', 'Fifty Flames', 'Reach a 50-day streak',
-      Icons.local_fire_department,
-      category: AchievementCategory.streak, metric: 'longestStreak', target: 50),
-  Achievement('streak-100', 'Hundred Days', 'Reach a 100-day streak',
-      Icons.whatshot,
-      category: AchievementCategory.streak, metric: 'longestStreak', target: 100),
-  Achievement('streak-200', 'Unwavering', 'Reach a 200-day streak',
-      Icons.whatshot,
-      category: AchievementCategory.streak, metric: 'longestStreak', target: 200),
-  Achievement('streak-365', 'A Year in the Mist', 'Reach a 365-day streak',
-      Icons.emoji_events,
-      category: AchievementCategory.streak, metric: 'longestStreak', target: 365),
-  Achievement('freezes-2', 'Ice Keeper', 'Hold 2 streak freezes at once',
-      Icons.ac_unit,
-      category: AchievementCategory.streak, metric: 'freezes', target: 2),
-  Achievement('freeze-saved', 'Saved by the Frost',
-      'Let a streak freeze protect a missed day', Icons.severe_cold,
-      category: AchievementCategory.streak, metric: 'freezesUsed', target: 1),
-  Achievement('streak-repaired', 'Phoenix Rising',
-      'Rescue a broken streak by earning double your goal', Icons.healing,
-      category: AchievementCategory.streak, metric: 'repairs', target: 1),
-  Achievement('comeback', 'Welcome Back', 'Return after a week or more away',
-      Icons.waving_hand_outlined,
-      category: AchievementCategory.streak, metric: 'comebacks', target: 1),
+  Achievement(
+    'streak-3',
+    'Three-Day Streak',
+    'Read on 3 days in a row',
+    Icons.local_fire_department_outlined,
+    category: AchievementCategory.streak,
+    metric: 'longestStreak',
+    target: 3,
+  ),
+  Achievement(
+    'streak-7',
+    'Week of Reading',
+    'Reach a 7-day streak',
+    Icons.local_fire_department_outlined,
+    category: AchievementCategory.streak,
+    metric: 'longestStreak',
+    target: 7,
+  ),
+  Achievement(
+    'streak-14',
+    'Fortnight Flame',
+    'Reach a 14-day streak',
+    Icons.local_fire_department_outlined,
+    category: AchievementCategory.streak,
+    metric: 'longestStreak',
+    target: 14,
+  ),
+  Achievement(
+    'streak-30',
+    'Month of the Seer',
+    'Reach a 30-day streak',
+    Icons.local_fire_department,
+    category: AchievementCategory.streak,
+    metric: 'longestStreak',
+    target: 30,
+  ),
+  Achievement(
+    'streak-50',
+    'Fifty Flames',
+    'Reach a 50-day streak',
+    Icons.local_fire_department,
+    category: AchievementCategory.streak,
+    metric: 'longestStreak',
+    target: 50,
+  ),
+  Achievement(
+    'streak-100',
+    'Hundred Days',
+    'Reach a 100-day streak',
+    Icons.whatshot,
+    category: AchievementCategory.streak,
+    metric: 'longestStreak',
+    target: 100,
+  ),
+  Achievement(
+    'streak-200',
+    'Unwavering',
+    'Reach a 200-day streak',
+    Icons.whatshot,
+    category: AchievementCategory.streak,
+    metric: 'longestStreak',
+    target: 200,
+  ),
+  Achievement(
+    'streak-365',
+    'A Year in the Mist',
+    'Reach a 365-day streak',
+    Icons.emoji_events,
+    category: AchievementCategory.streak,
+    metric: 'longestStreak',
+    target: 365,
+  ),
+  Achievement(
+    'freezes-2',
+    'Ice Keeper',
+    'Hold 2 streak freezes at once',
+    Icons.ac_unit,
+    category: AchievementCategory.streak,
+    metric: 'freezes',
+    target: 2,
+  ),
+  Achievement(
+    'freeze-saved',
+    'Saved by the Frost',
+    'Let a streak freeze protect a missed day',
+    Icons.severe_cold,
+    category: AchievementCategory.streak,
+    metric: 'freezesUsed',
+    target: 1,
+  ),
+  Achievement(
+    'streak-repaired',
+    'Phoenix Rising',
+    'Rescue a broken streak by earning double your goal',
+    Icons.healing,
+    category: AchievementCategory.streak,
+    metric: 'repairs',
+    target: 1,
+  ),
+  Achievement(
+    'comeback',
+    'Welcome Back',
+    'Return after a week or more away',
+    Icons.waving_hand_outlined,
+    category: AchievementCategory.streak,
+    metric: 'comebacks',
+    target: 1,
+  ),
   // Reading volume.
-  Achievement('first-page', 'First Steps', 'Read your first page',
-      Icons.menu_book_outlined,
-      category: AchievementCategory.reading, metric: 'totalPages', target: 1),
-  Achievement('pages-100', 'Hundred Pages', 'Read 100 pages',
-      Icons.auto_stories_outlined,
-      category: AchievementCategory.reading, metric: 'totalPages', target: 100),
-  Achievement('pages-1000', 'Thousand Pages', 'Read 1,000 pages',
-      Icons.auto_stories,
-      category: AchievementCategory.reading, metric: 'totalPages', target: 1000),
-  Achievement('pages-5000', 'Tome Devourer', 'Read 5,000 pages',
-      Icons.auto_stories,
-      category: AchievementCategory.reading, metric: 'totalPages', target: 5000),
-  Achievement('first-chapter', 'Chapter Complete', 'Finish a full chapter',
-      Icons.done_all,
-      category: AchievementCategory.reading, metric: 'totalChapters', target: 1),
-  Achievement('chapters-10', 'Ten Chapters', 'Finish 10 chapters',
-      Icons.library_books_outlined,
-      category: AchievementCategory.reading, metric: 'totalChapters', target: 10),
-  Achievement('chapters-50', 'Half the Mystery', 'Finish 50 chapters',
-      Icons.library_books_outlined,
-      category: AchievementCategory.reading, metric: 'totalChapters', target: 50),
-  Achievement('chapters-100', 'Century of Chapters', 'Finish 100 chapters',
-      Icons.local_library_outlined,
-      category: AchievementCategory.reading, metric: 'totalChapters', target: 100),
-  Achievement('chapters-250', 'Sequence Ascension', 'Finish 250 chapters',
-      Icons.local_library,
-      category: AchievementCategory.reading, metric: 'totalChapters', target: 250),
-  Achievement('chapters-500', 'Half a Thousand', 'Finish 500 chapters',
-      Icons.local_library,
-      category: AchievementCategory.reading, metric: 'totalChapters', target: 500),
-  Achievement('chapters-1000', 'The Whole Saga', 'Finish 1,000 chapters',
-      Icons.workspace_premium,
-      category: AchievementCategory.reading, metric: 'totalChapters', target: 1000),
-  Achievement('marathon', 'Marathon Session', 'Read 100 pages in a single day',
-      Icons.directions_run,
-      category: AchievementCategory.reading, metric: 'bestDayPages', target: 100),
-  Achievement('binge', 'Binge Reader', 'Finish 5 chapters in a single day',
-      Icons.fast_forward,
-      category: AchievementCategory.reading, metric: 'bestDayChapters', target: 5),
-  Achievement('two-worlds', 'Two Worlds', 'Finish a chapter of both novels',
-      Icons.public,
-      category: AchievementCategory.reading, metric: 'novels', target: 2),
+  Achievement(
+    'first-page',
+    'First Steps',
+    'Read your first page',
+    Icons.menu_book_outlined,
+    category: AchievementCategory.reading,
+    metric: 'totalPages',
+    target: 1,
+  ),
+  Achievement(
+    'pages-100',
+    'Hundred Pages',
+    'Read 100 pages',
+    Icons.auto_stories_outlined,
+    category: AchievementCategory.reading,
+    metric: 'totalPages',
+    target: 100,
+  ),
+  Achievement(
+    'pages-1000',
+    'Thousand Pages',
+    'Read 1,000 pages',
+    Icons.auto_stories,
+    category: AchievementCategory.reading,
+    metric: 'totalPages',
+    target: 1000,
+  ),
+  Achievement(
+    'pages-5000',
+    'Tome Devourer',
+    'Read 5,000 pages',
+    Icons.auto_stories,
+    category: AchievementCategory.reading,
+    metric: 'totalPages',
+    target: 5000,
+  ),
+  Achievement(
+    'first-chapter',
+    'Chapter Complete',
+    'Finish a full chapter',
+    Icons.done_all,
+    category: AchievementCategory.reading,
+    metric: 'totalChapters',
+    target: 1,
+  ),
+  Achievement(
+    'chapters-10',
+    'Ten Chapters',
+    'Finish 10 chapters',
+    Icons.library_books_outlined,
+    category: AchievementCategory.reading,
+    metric: 'totalChapters',
+    target: 10,
+  ),
+  Achievement(
+    'chapters-50',
+    'Half the Mystery',
+    'Finish 50 chapters',
+    Icons.library_books_outlined,
+    category: AchievementCategory.reading,
+    metric: 'totalChapters',
+    target: 50,
+  ),
+  Achievement(
+    'chapters-100',
+    'Century of Chapters',
+    'Finish 100 chapters',
+    Icons.local_library_outlined,
+    category: AchievementCategory.reading,
+    metric: 'totalChapters',
+    target: 100,
+  ),
+  Achievement(
+    'chapters-250',
+    'Sequence Ascension',
+    'Finish 250 chapters',
+    Icons.local_library,
+    category: AchievementCategory.reading,
+    metric: 'totalChapters',
+    target: 250,
+  ),
+  Achievement(
+    'chapters-500',
+    'Half a Thousand',
+    'Finish 500 chapters',
+    Icons.local_library,
+    category: AchievementCategory.reading,
+    metric: 'totalChapters',
+    target: 500,
+  ),
+  Achievement(
+    'chapters-1000',
+    'The Whole Saga',
+    'Finish 1,000 chapters',
+    Icons.workspace_premium,
+    category: AchievementCategory.reading,
+    metric: 'totalChapters',
+    target: 1000,
+  ),
+  Achievement(
+    'marathon',
+    'Marathon Session',
+    'Read 100 pages in a single day',
+    Icons.directions_run,
+    category: AchievementCategory.reading,
+    metric: 'bestDayPages',
+    target: 100,
+  ),
+  Achievement(
+    'binge',
+    'Binge Reader',
+    'Finish 5 chapters in a single day',
+    Icons.fast_forward,
+    category: AchievementCategory.reading,
+    metric: 'bestDayChapters',
+    target: 5,
+  ),
+  Achievement(
+    'two-worlds',
+    'Two Worlds',
+    'Finish a chapter of both novels',
+    Icons.public,
+    category: AchievementCategory.reading,
+    metric: 'novels',
+    target: 2,
+  ),
   // XP and levels.
-  Achievement('xp-100', 'Warming Up', 'Earn 100 total XP', Icons.bolt,
-      category: AchievementCategory.xp, metric: 'totalXp', target: 100),
-  Achievement('xp-500', 'Committed Reader', 'Earn 500 total XP', Icons.bolt,
-      category: AchievementCategory.xp, metric: 'totalXp', target: 500),
-  Achievement('xp-1000', 'Deep into the Mist', 'Earn 1,000 total XP',
-      Icons.bolt,
-      category: AchievementCategory.xp, metric: 'totalXp', target: 1000),
-  Achievement('xp-2500', 'Avid Reader', 'Earn 2,500 total XP', Icons.bolt,
-      category: AchievementCategory.xp, metric: 'totalXp', target: 2500),
-  Achievement('xp-5000', 'Walking the Path', 'Earn 5,000 total XP',
-      Icons.auto_awesome,
-      category: AchievementCategory.xp, metric: 'totalXp', target: 5000),
-  Achievement('xp-10000', 'Ten Thousand Whispers', 'Earn 10,000 total XP',
-      Icons.auto_awesome,
-      category: AchievementCategory.xp, metric: 'totalXp', target: 10000),
-  Achievement('xp-25000', 'Legend of the Mist', 'Earn 25,000 total XP',
-      Icons.diamond_outlined,
-      category: AchievementCategory.xp, metric: 'totalXp', target: 25000),
-  Achievement('level-5', 'Rising Reader', 'Reach level 5', Icons.trending_up,
-      category: AchievementCategory.xp, metric: 'level', target: 5),
-  Achievement('level-10', 'Ascended Mystic', 'Reach level 10',
-      Icons.military_tech,
-      category: AchievementCategory.xp, metric: 'level', target: 10),
+  Achievement(
+    'xp-100',
+    'Warming Up',
+    'Earn 100 total XP',
+    Icons.bolt,
+    category: AchievementCategory.xp,
+    metric: 'totalXp',
+    target: 100,
+  ),
+  Achievement(
+    'xp-500',
+    'Committed Reader',
+    'Earn 500 total XP',
+    Icons.bolt,
+    category: AchievementCategory.xp,
+    metric: 'totalXp',
+    target: 500,
+  ),
+  Achievement(
+    'xp-1000',
+    'Deep into the Mist',
+    'Earn 1,000 total XP',
+    Icons.bolt,
+    category: AchievementCategory.xp,
+    metric: 'totalXp',
+    target: 1000,
+  ),
+  Achievement(
+    'xp-2500',
+    'Avid Reader',
+    'Earn 2,500 total XP',
+    Icons.bolt,
+    category: AchievementCategory.xp,
+    metric: 'totalXp',
+    target: 2500,
+  ),
+  Achievement(
+    'xp-5000',
+    'Walking the Path',
+    'Earn 5,000 total XP',
+    Icons.auto_awesome,
+    category: AchievementCategory.xp,
+    metric: 'totalXp',
+    target: 5000,
+  ),
+  Achievement(
+    'xp-10000',
+    'Ten Thousand Whispers',
+    'Earn 10,000 total XP',
+    Icons.auto_awesome,
+    category: AchievementCategory.xp,
+    metric: 'totalXp',
+    target: 10000,
+  ),
+  Achievement(
+    'xp-25000',
+    'Legend of the Mist',
+    'Earn 25,000 total XP',
+    Icons.diamond_outlined,
+    category: AchievementCategory.xp,
+    metric: 'totalXp',
+    target: 25000,
+  ),
+  Achievement(
+    'level-5',
+    'Rising Reader',
+    'Reach level 5',
+    Icons.trending_up,
+    category: AchievementCategory.xp,
+    metric: 'level',
+    target: 5,
+  ),
+  Achievement(
+    'level-10',
+    'Ascended Mystic',
+    'Reach level 10',
+    Icons.military_tech,
+    category: AchievementCategory.xp,
+    metric: 'level',
+    target: 10,
+  ),
   // Goals and quests.
-  Achievement('goal-1', 'Goal Getter', 'Meet your daily goal',
-      Icons.flag_outlined,
-      category: AchievementCategory.goals, metric: 'goalDays', target: 1),
-  Achievement('goal-7', 'Consistent', 'Meet your daily goal on 7 days',
-      Icons.flag,
-      category: AchievementCategory.goals, metric: 'goalDays', target: 7),
-  Achievement('goal-30', 'Dedicated', 'Meet your daily goal on 30 days',
-      Icons.flag,
-      category: AchievementCategory.goals, metric: 'goalDays', target: 30),
-  Achievement('goal-100', 'Unstoppable', 'Meet your daily goal on 100 days',
-      Icons.flag_circle,
-      category: AchievementCategory.goals, metric: 'goalDays', target: 100),
-  Achievement('perfect-week', 'Perfect Week',
-      'Meet your goal 7 days in a row', Icons.event_available,
-      category: AchievementCategory.goals, metric: 'longestGoalStreak', target: 7),
-  Achievement('perfect-month', 'Perfect Month',
-      'Meet your goal 30 days in a row', Icons.calendar_month,
-      category: AchievementCategory.goals, metric: 'longestGoalStreak', target: 30),
-  Achievement('overachiever', 'Overachiever',
-      'Earn double your daily goal in one day', Icons.rocket_launch_outlined,
-      category: AchievementCategory.goals, metric: 'overtimeDays', target: 1),
-  Achievement('quests-1', 'Quest Complete', 'Finish all daily quests once',
-      Icons.task_alt,
-      category: AchievementCategory.goals, metric: 'questDays', target: 1),
-  Achievement('quests-10', 'Questmaster', 'Finish all daily quests on 10 days',
-      Icons.task_alt,
-      category: AchievementCategory.goals, metric: 'questDays', target: 10),
-  Achievement('quests-50', 'Legendary Quester',
-      'Finish all daily quests on 50 days', Icons.stars,
-      category: AchievementCategory.goals, metric: 'questDays', target: 50),
+  Achievement(
+    'goal-1',
+    'Goal Getter',
+    'Meet your daily goal',
+    Icons.flag_outlined,
+    category: AchievementCategory.goals,
+    metric: 'goalDays',
+    target: 1,
+  ),
+  Achievement(
+    'goal-7',
+    'Consistent',
+    'Meet your daily goal on 7 days',
+    Icons.flag,
+    category: AchievementCategory.goals,
+    metric: 'goalDays',
+    target: 7,
+  ),
+  Achievement(
+    'goal-30',
+    'Dedicated',
+    'Meet your daily goal on 30 days',
+    Icons.flag,
+    category: AchievementCategory.goals,
+    metric: 'goalDays',
+    target: 30,
+  ),
+  Achievement(
+    'goal-100',
+    'Unstoppable',
+    'Meet your daily goal on 100 days',
+    Icons.flag_circle,
+    category: AchievementCategory.goals,
+    metric: 'goalDays',
+    target: 100,
+  ),
+  Achievement(
+    'perfect-week',
+    'Perfect Week',
+    'Meet your goal 7 days in a row',
+    Icons.event_available,
+    category: AchievementCategory.goals,
+    metric: 'longestGoalStreak',
+    target: 7,
+  ),
+  Achievement(
+    'perfect-month',
+    'Perfect Month',
+    'Meet your goal 30 days in a row',
+    Icons.calendar_month,
+    category: AchievementCategory.goals,
+    metric: 'longestGoalStreak',
+    target: 30,
+  ),
+  Achievement(
+    'overachiever',
+    'Overachiever',
+    'Earn double your daily goal in one day',
+    Icons.rocket_launch_outlined,
+    category: AchievementCategory.goals,
+    metric: 'overtimeDays',
+    target: 1,
+  ),
+  Achievement(
+    'quests-1',
+    'Quest Complete',
+    'Finish all daily quests once',
+    Icons.task_alt,
+    category: AchievementCategory.goals,
+    metric: 'questDays',
+    target: 1,
+  ),
+  Achievement(
+    'quests-10',
+    'Questmaster',
+    'Finish all daily quests on 10 days',
+    Icons.task_alt,
+    category: AchievementCategory.goals,
+    metric: 'questDays',
+    target: 10,
+  ),
+  Achievement(
+    'quests-50',
+    'Legendary Quester',
+    'Finish all daily quests on 50 days',
+    Icons.stars,
+    category: AchievementCategory.goals,
+    metric: 'questDays',
+    target: 50,
+  ),
   // Reading habits.
-  Achievement('early-bird', 'Early Bird', 'Read before 7 AM',
-      Icons.wb_twilight,
-      category: AchievementCategory.habits, metric: 'earlyBird', target: 1),
-  Achievement('night-owl', 'Night Owl', 'Read between 11 PM and 4 AM',
-      Icons.nightlight_outlined,
-      category: AchievementCategory.habits, metric: 'nightOwl', target: 1),
-  Achievement('weekend-warrior', 'Weekend Warrior',
-      'Read on both days of a weekend', Icons.weekend_outlined,
-      category: AchievementCategory.habits, metric: 'weekends', target: 1),
-  Achievement('weekend-10', 'Weekend Devotee',
-      'Read on both days of 10 weekends', Icons.weekend,
-      category: AchievementCategory.habits, metric: 'weekends', target: 10),
+  Achievement(
+    'early-bird',
+    'Early Bird',
+    'Read before 7 AM',
+    Icons.wb_twilight,
+    category: AchievementCategory.habits,
+    metric: 'earlyBird',
+    target: 1,
+  ),
+  Achievement(
+    'night-owl',
+    'Night Owl',
+    'Read between 11 PM and 4 AM',
+    Icons.nightlight_outlined,
+    category: AchievementCategory.habits,
+    metric: 'nightOwl',
+    target: 1,
+  ),
+  Achievement(
+    'weekend-warrior',
+    'Weekend Warrior',
+    'Read on both days of a weekend',
+    Icons.weekend_outlined,
+    category: AchievementCategory.habits,
+    metric: 'weekends',
+    target: 1,
+  ),
+  Achievement(
+    'weekend-10',
+    'Weekend Devotee',
+    'Read on both days of 10 weekends',
+    Icons.weekend,
+    category: AchievementCategory.habits,
+    metric: 'weekends',
+    target: 10,
+  ),
+  // Time and focus.
+  Achievement(
+    'time-1h',
+    'First Hour',
+    'Read for 1 hour in total',
+    Icons.hourglass_empty,
+    category: AchievementCategory.time,
+    metric: 'totalSeconds',
+    target: 3600,
+  ),
+  Achievement(
+    'time-10h',
+    'Ten Hours Deep',
+    'Read for 10 hours in total',
+    Icons.hourglass_bottom,
+    category: AchievementCategory.time,
+    metric: 'totalSeconds',
+    target: 36000,
+  ),
+  Achievement(
+    'time-50h',
+    'Fifty Hours in the Fog',
+    'Read for 50 hours in total',
+    Icons.hourglass_full,
+    category: AchievementCategory.time,
+    metric: 'totalSeconds',
+    target: 180000,
+  ),
+  Achievement(
+    'time-100h',
+    'Keeper of Hours',
+    'Read for 100 hours in total',
+    Icons.history_toggle_off,
+    category: AchievementCategory.time,
+    metric: 'totalSeconds',
+    target: 360000,
+  ),
+  Achievement(
+    'focus-1',
+    'In the Zone',
+    'Read $focusMinutes minutes in one sitting to enter focus',
+    Icons.center_focus_strong,
+    category: AchievementCategory.time,
+    metric: 'focusSessions',
+    target: 1,
+  ),
+  Achievement(
+    'focus-25',
+    'Deep Diver',
+    'Reach focus in 25 sessions',
+    Icons.scuba_diving,
+    category: AchievementCategory.time,
+    metric: 'focusSessions',
+    target: 25,
+  ),
+  Achievement(
+    'session-30',
+    'Lost in the Pages',
+    'Read 30 minutes in one sitting',
+    Icons.self_improvement,
+    category: AchievementCategory.time,
+    metric: 'longestSession',
+    target: 1800,
+  ),
+  Achievement(
+    'session-60',
+    'Deep Immersion',
+    'Read 60 minutes in one sitting',
+    Icons.spa,
+    category: AchievementCategory.time,
+    metric: 'longestSession',
+    target: 3600,
+  ),
+  // Rewards.
+  Achievement(
+    'chest-1',
+    'Treasure Hunter',
+    'Open your first mystery chest',
+    Icons.inventory_2_outlined,
+    category: AchievementCategory.rewards,
+    metric: 'chestsOpened',
+    target: 1,
+  ),
+  Achievement(
+    'chest-10',
+    'Chest Collector',
+    'Open 10 mystery chests',
+    Icons.inventory_2,
+    category: AchievementCategory.rewards,
+    metric: 'chestsOpened',
+    target: 10,
+  ),
+  Achievement(
+    'chest-50',
+    'Hoard of the Fool',
+    'Open 50 mystery chests',
+    Icons.savings,
+    category: AchievementCategory.rewards,
+    metric: 'chestsOpened',
+    target: 50,
+  ),
+  Achievement(
+    'weekly-1',
+    'Weekly Challenger',
+    'Claim a weekly challenge reward',
+    Icons.military_tech_outlined,
+    category: AchievementCategory.rewards,
+    metric: 'weeklyClaims',
+    target: 1,
+  ),
+  Achievement(
+    'weekly-gold',
+    'Golden Week',
+    'Reach the gold tier of a weekly challenge',
+    Icons.emoji_events_outlined,
+    category: AchievementCategory.rewards,
+    metric: 'weeklyGolds',
+    target: 1,
+  ),
+  Achievement(
+    'weekly-gold-5',
+    'Gilded Path',
+    'Reach the gold tier in 5 weeks',
+    Icons.emoji_events,
+    category: AchievementCategory.rewards,
+    metric: 'weeklyGolds',
+    target: 5,
+  ),
+  Achievement(
+    'bonus-100',
+    'Burning Bright',
+    'Earn 100 bonus XP from flame and focus multipliers',
+    Icons.whatshot_outlined,
+    category: AchievementCategory.rewards,
+    metric: 'bonusXp',
+    target: 100,
+  ),
+  Achievement(
+    'bonus-1000',
+    'Wildfire',
+    'Earn 1,000 bonus XP from flame and focus multipliers',
+    Icons.local_fire_department,
+    category: AchievementCategory.rewards,
+    metric: 'bonusXp',
+    target: 1000,
+  ),
 ];
 
 Achievement? achievementById(String id) {
@@ -313,7 +816,19 @@ StreakTier streakTier(int streak) {
 }
 
 /// Streak lengths worth a celebration. Past the list, every 100 days counts.
-const List<int> streakMilestones = [3, 7, 14, 30, 50, 100, 150, 200, 250, 300, 365];
+const List<int> streakMilestones = [
+  3,
+  7,
+  14,
+  30,
+  50,
+  100,
+  150,
+  200,
+  250,
+  300,
+  365,
+];
 
 bool isStreakMilestone(int streak) =>
     streakMilestones.contains(streak) || (streak > 365 && streak % 100 == 0);
@@ -351,18 +866,135 @@ class DailyQuest {
   final int current;
   final int target;
   bool get done => current >= target;
-  double get progress => target <= 0 ? 1 : (current / target).clamp(0, 1).toDouble();
+  double get progress =>
+      target <= 0 ? 1 : (current / target).clamp(0, 1).toDouble();
 }
 
 /// A streak lost on [on] that may still be rescued that same day.
 class StreakRescue {
-  const StreakRescue(this.length, this.on, this.gap, this.targetXp, this.currentXp);
+  const StreakRescue(
+    this.length,
+    this.on,
+    this.gap,
+    this.targetXp,
+    this.currentXp,
+  );
   final int length;
   final String on;
   final List<String> gap;
   final int targetXp;
   final int currentXp;
   double get progress => (currentXp / targetXp).clamp(0, 1).toDouble();
+}
+
+/// What a daily mystery chest holds. Rarity drives the opening animation.
+class ChestReward {
+  const ChestReward(this.rarity, this.xp, {this.freeze = false});
+
+  /// `common`, `rare`, `epic` or `legendary`.
+  final String rarity;
+  final int xp;
+  final bool freeze;
+}
+
+const Map<String, Color> rarityColors = {
+  'common': Color(0xff9fc2dd),
+  'rare': Color(0xff80bea4),
+  'epic': Color(0xffb28dff),
+  'legendary': Color(0xffffc857),
+};
+
+/// One reward tier of the weekly challenge: reach [multiplier]× the daily
+/// goal in XP between Monday and Sunday.
+class WeeklyTier {
+  const WeeklyTier(
+    this.name,
+    this.multiplier,
+    this.rewardXp,
+    this.color, {
+    this.freeze = false,
+  });
+  final String name;
+  final int multiplier;
+  final int rewardXp;
+  final Color color;
+  final bool freeze;
+}
+
+const List<WeeklyTier> weeklyTiers = [
+  WeeklyTier('Bronze', 3, 20, Color(0xffc98b5a)),
+  WeeklyTier('Silver', 5, 40, Color(0xffc4d0da)),
+  WeeklyTier('Gold', 7, 75, Color(0xffffc857), freeze: true),
+];
+
+class WeeklyChallenge {
+  const WeeklyChallenge(
+    this.week,
+    this.xp,
+    this.targets,
+    this.claimed,
+    this.ends,
+  );
+
+  /// Monday of the week, as a date key.
+  final String week;
+  final int xp;
+  final List<int> targets;
+  final Set<int> claimed;
+  final DateTime ends;
+  bool reached(int tier) => xp >= targets[tier];
+  bool claimable(int tier) => reached(tier) && !claimed.contains(tier);
+  int get claimableCount => [
+    for (var i = 0; i < targets.length; i++)
+      if (claimable(i)) i,
+  ].length;
+  double get progress => (xp / targets.last).clamp(0, 1).toDouble();
+
+  /// The first tier not reached yet, or null once gold is in.
+  int? get nextTier {
+    for (var i = 0; i < targets.length; i++) {
+      if (!reached(i)) return i;
+    }
+    return null;
+  }
+}
+
+/// The reading session in progress: events no more than [sessionGapSeconds]
+/// apart.
+class ReadingSession {
+  const ReadingSession(this.seconds, this.pages, this.xp);
+  final int seconds, pages, xp;
+  bool get focus => seconds >= focusMinutes * 60;
+  double get focusProgress =>
+      (seconds / (focusMinutes * 60)).clamp(0, 1).toDouble();
+}
+
+/// One XP award, broadcast for the in-reader HUD.
+class XpGain {
+  const XpGain(this.xp, this.bonus, this.bonusPct, this.chapter, this.at);
+  final int xp, bonus, bonusPct;
+  final bool chapter;
+  final DateTime at;
+}
+
+/// Engagement summary over the last 30 days.
+class ReadingInsights {
+  const ReadingInsights({
+    required this.activeDays,
+    required this.averageXp,
+    required this.averageMinutes,
+    required this.favoritePeriod,
+    required this.bestWeekday,
+    required this.chaptersPerDay,
+  });
+  final int activeDays;
+  final int averageXp;
+  final int averageMinutes;
+  final String? favoritePeriod;
+  final String? bestWeekday;
+
+  /// Chapters finished per day over the last 14 days.
+  final double chaptersPerDay;
 }
 
 /// Duolingo-style motivation for steady reading: XP, levels, daily goals,
@@ -380,46 +1012,72 @@ class HabitStore extends ChangeNotifier {
   HabitStore(this.file);
   final File file;
   Map<String, dynamic> data = _fresh();
-  Future<void> _pending = Future.value();
+  // Created on first write so it belongs to the zone doing the writing.
+  Future<void>? _pending;
   bool _disposed = false;
   final List<String> _celebrations = [];
 
+  /// The latest XP award, for the in-reader HUD.
+  final ValueNotifier<XpGain?> gains = ValueNotifier(null);
+
+  // Session tracking lives in memory: a session ends when the app closes.
+  DateTime? _lastEventAt;
+  int _sessionSeconds = 0;
+  int _sessionPages = 0;
+  int _sessionXp = 0;
+  bool _sessionFocused = false;
+  int _pendingSeconds = 0;
+  int _unsavedSeconds = 0;
+
   static Map<String, dynamic> _fresh() => {
-        'version': 1,
-        'totalXp': 0,
-        'totalPages': 0,
-        'totalChapters': 0,
-        'freezes': 1,
-        'longestStreak': 0,
-        'goalDays': 0,
-        'longestGoalStreak': 0,
-        'bestDayPages': 0,
-        'bestDayChapters': 0,
-        'bestDayXp': 0,
-        'freezesUsed': 0,
-        'repairs': 0,
-        'comebacks': 0,
-        'questDays': 0,
-        'earlyBird': 0,
-        'nightOwl': 0,
-        'weekends': 0,
-        'overtimeDays': 0,
-        'days': <String, dynamic>{},
-        'freezeDates': <String>[],
-        'repairDates': <String>[],
-        'goalDates': <String>[],
-        'floors': <String, dynamic>{},
-        'chaptersCompleted': <String>[],
-        'achievements': <String>[],
-        'achievementDates': <String, dynamic>{},
-        'freezeMilestones': <int>[],
-        'lostStreak': null,
-        'goal': defaultGoal,
-        'remindersEnabled': true,
-        'reminderTime': defaultReminderTime,
-        'winBackEnabled': true,
-        'goalCelebratedOn': null,
-      };
+    'version': 1,
+    'totalXp': 0,
+    'totalPages': 0,
+    'totalChapters': 0,
+    'freezes': 1,
+    'longestStreak': 0,
+    'goalDays': 0,
+    'longestGoalStreak': 0,
+    'bestDayPages': 0,
+    'bestDayChapters': 0,
+    'bestDayXp': 0,
+    'freezesUsed': 0,
+    'repairs': 0,
+    'comebacks': 0,
+    'questDays': 0,
+    'earlyBird': 0,
+    'nightOwl': 0,
+    'weekends': 0,
+    'overtimeDays': 0,
+    'totalSeconds': 0,
+    'longestSession': 0,
+    'focusSessions': 0,
+    'chestsOpened': 0,
+    'weeklyClaims': 0,
+    'weeklyGolds': 0,
+    'bonusXp': 0,
+    'rewardXp': 0,
+    'bonusCarry': 0,
+    'hours': List<int>.filled(24, 0),
+    'weekClaims': <String, dynamic>{},
+    'chestOpenedOn': null,
+    'readerHud': true,
+    'days': <String, dynamic>{},
+    'freezeDates': <String>[],
+    'repairDates': <String>[],
+    'goalDates': <String>[],
+    'floors': <String, dynamic>{},
+    'chaptersCompleted': <String>[],
+    'achievements': <String>[],
+    'achievementDates': <String, dynamic>{},
+    'freezeMilestones': <int>[],
+    'lostStreak': null,
+    'goal': defaultGoal,
+    'remindersEnabled': true,
+    'reminderTime': defaultReminderTime,
+    'winBackEnabled': true,
+    'goalCelebratedOn': null,
+  };
 
   static const _intKeys = [
     'totalXp',
@@ -440,6 +1098,15 @@ class HabitStore extends ChangeNotifier {
     'nightOwl',
     'weekends',
     'overtimeDays',
+    'totalSeconds',
+    'longestSession',
+    'focusSessions',
+    'chestsOpened',
+    'weeklyClaims',
+    'weeklyGolds',
+    'bonusXp',
+    'rewardXp',
+    'bonusCarry',
   ];
 
   static final _dateListKeys = ['freezeDates', 'repairDates', 'goalDates'];
@@ -471,9 +1138,18 @@ class HabitStore extends ChangeNotifier {
   int get freezesUsed => _int('freezesUsed');
   int get repairs => _int('repairs');
   int get questDays => _int('questDays');
+  int get totalSeconds => _int('totalSeconds');
+  int get longestSession => _int('longestSession');
+  int get focusSessions => _int('focusSessions');
+  int get chestsOpened => _int('chestsOpened');
+  int get bonusXp => _int('bonusXp');
+  int get rewardXp => _int('rewardXp');
+  bool get readerHud => data['readerHud'] != false;
+  SequenceRank get sequence => sequenceForLevel(level);
   String get goal => data['goal'] as String? ?? defaultGoal;
   int get goalTargetXp => goalXp(goal);
-  String get reminderTime => data['reminderTime'] as String? ?? defaultReminderTime;
+  String get reminderTime =>
+      data['reminderTime'] as String? ?? defaultReminderTime;
   bool get remindersEnabled => data['remindersEnabled'] == true;
   bool get winBackEnabled => data['winBackEnabled'] == true;
   LevelInfo get level => levelForXp(totalXp);
@@ -496,9 +1172,10 @@ class HabitStore extends ChangeNotifier {
         'pages': (day['pages'] as num?)?.toInt() ?? 0,
         'chapters': (day['chapters'] as num?)?.toInt() ?? 0,
         'xp': (day['xp'] as num?)?.toInt() ?? 0,
+        'seconds': (day['seconds'] as num?)?.toInt() ?? 0,
       };
     }
-    return const {'pages': 0, 'chapters': 0, 'xp': 0};
+    return const {'pages': 0, 'chapters': 0, 'xp': 0, 'seconds': 0};
   }
 
   int get todayXp => dayStats(todayKey)['xp'] as int;
@@ -557,7 +1234,8 @@ class HabitStore extends ChangeNotifier {
     final cutoff = DateTime.now().subtract(const Duration(days: retentionDays));
     bool recent(String key) {
       final d = parseDateKey(key);
-      return d != null && !d.isBefore(DateTime(cutoff.year, cutoff.month, cutoff.day));
+      return d != null &&
+          !d.isBefore(DateTime(cutoff.year, cutoff.month, cutoff.day));
     }
 
     final days = value['days'];
@@ -571,6 +1249,8 @@ class HabitStore extends ChangeNotifier {
           'pages': _posInt(day['pages']),
           'chapters': _posInt(day['chapters']),
           'xp': _posInt(day['xp']),
+          if (_posInt(day['seconds']) > 0)
+            'seconds': _posInt(day['seconds']).clamp(0, 86400),
           if (day['quests'] == true) 'quests': true,
         };
       }
@@ -592,8 +1272,9 @@ class HabitStore extends ChangeNotifier {
         final key = entry.key as String;
         final datePart = key.split('/').lastOrNull ?? '';
         if (!recent(datePart)) continue;
-        if (!RegExp(r'^(lotm|coi)/(webnovel|oldtl|pt-br)/[1-9][0-9]{0,3}/\d{4}-\d{2}-\d{2}$')
-            .hasMatch(key)) {
+        if (!RegExp(
+          r'^(lotm|coi)/(webnovel|oldtl|pt-br)/[1-9][0-9]{0,3}/\d{4}-\d{2}-\d{2}$',
+        ).hasMatch(key)) {
           continue;
         }
         final raw = entry.value;
@@ -608,8 +1289,9 @@ class HabitStore extends ChangeNotifier {
       final kept = <String>{};
       for (final raw in completed) {
         if (raw is String &&
-            RegExp(r'^(lotm|coi)/(webnovel|oldtl|pt-br)/[1-9][0-9]{0,3}$')
-                .hasMatch(raw)) {
+            RegExp(
+              r'^(lotm|coi)/(webnovel|oldtl|pt-br)/[1-9][0-9]{0,3}$',
+            ).hasMatch(raw)) {
           kept.add(raw);
         }
       }
@@ -666,6 +1348,30 @@ class HabitStore extends ChangeNotifier {
         };
       }
     }
+    next['bonusCarry'] = (next['bonusCarry'] as int).clamp(0, 99);
+    final hours = value['hours'];
+    if (hours is List && hours.length == 24) {
+      next['hours'] = [for (final h in hours) _posInt(h)];
+    }
+    final claims = value['weekClaims'];
+    if (claims is Map) {
+      final kept = <String, dynamic>{};
+      for (final entry in claims.entries) {
+        if (entry.key is! String || !recent(entry.key as String)) continue;
+        final tiers = entry.value;
+        if (tiers is! List) continue;
+        kept[entry.key as String] = <int>{
+          for (final t in tiers)
+            if (t is int && t >= 0 && t < weeklyTiers.length) t,
+        }.toList()..sort();
+      }
+      next['weekClaims'] = kept;
+    }
+    final chest = value['chestOpenedOn'];
+    if (chest is String && parseDateKey(chest) != null) {
+      next['chestOpenedOn'] = chest;
+    }
+    if (value['readerHud'] is bool) next['readerHud'] = value['readerHud'];
     final goal = value['goal'];
     if (goal is String && dailyGoals.containsKey(goal)) next['goal'] = goal;
     if (value['remindersEnabled'] is bool) {
@@ -675,7 +1381,8 @@ class HabitStore extends ChangeNotifier {
       next['winBackEnabled'] = value['winBackEnabled'];
     }
     final time = value['reminderTime'];
-    if (time is String && RegExp(r'^([01][0-9]|2[0-3]):[0-5][0-9]$').hasMatch(time)) {
+    if (time is String &&
+        RegExp(r'^([01][0-9]|2[0-3]):[0-5][0-9]$').hasMatch(time)) {
       next['reminderTime'] = time;
     }
     final celebrated = value['goalCelebratedOn'];
@@ -690,14 +1397,17 @@ class HabitStore extends ChangeNotifier {
 
   Future<void> persist() {
     final snapshot = jsonEncode(data);
-    _pending = _pending.catchError((Object _) {}).then((_) async {
-      await file.parent.create(recursive: true);
-      final temp = File('${file.path}.tmp');
-      await temp.writeAsString(snapshot, flush: true);
-      await temp.rename(file.path);
-    });
+    final pending = (_pending ?? Future<void>.value())
+        .catchError((Object _) {})
+        .then((_) async {
+          await file.parent.create(recursive: true);
+          final temp = File('${file.path}.tmp');
+          await temp.writeAsString(snapshot, flush: true);
+          await temp.rename(file.path);
+        });
+    _pending = pending;
     notifyListeners();
-    return _pending;
+    return pending;
   }
 
   /// Records raw scroll offset for a chapter. New logical pages award XP;
@@ -722,6 +1432,8 @@ class HabitStore extends ChangeNotifier {
     final wasActive = _days.containsKey(today);
     final dayXpBefore = dayStats(today)['xp'] as int;
     final previousActive = _lastActiveBefore(today);
+    final weeklyBefore = weeklyChallenge(now: at);
+    final seconds = _trackSession(at);
 
     final floors = _floors;
     final floorKey = '$edition/$slug/$today';
@@ -748,14 +1460,55 @@ class HabitStore extends ChangeNotifier {
       }
     }
 
-    if (pages == 0 && !chapterDone) return;
+    if (pages == 0 && !chapterDone) {
+      // Time spent re-reading still counts once the day has started.
+      if (seconds > 0 && wasActive) {
+        _addToDay(today, seconds: seconds);
+        data['totalSeconds'] = totalSeconds + seconds;
+        _unsavedSeconds += seconds;
+        _recordSessionStats();
+        if (_unsavedSeconds >= 30) {
+          _evaluateAchievements(at);
+          await persist();
+        }
+      } else if (seconds > 0) {
+        _pendingSeconds += seconds;
+      }
+      return;
+    }
+    _unsavedSeconds = 0;
+    final time = seconds + _pendingSeconds;
+    _pendingSeconds = 0;
 
     data['floors'] = floors;
-    final gained = pages * xpPerPage + chapterXp;
-    _addToDay(today, pages: pages, chapters: chapterDone ? 1 : 0, xp: gained);
+    final base = pages * xpPerPage + chapterXp;
+    final bonusPct = currentBonusPct(now: at);
+    final carry = _int('bonusCarry') + base * bonusPct;
+    final bonus = carry ~/ 100;
+    data['bonusCarry'] = carry % 100;
+    data['bonusXp'] = bonusXp + bonus;
+    final gained = base + bonus;
+    _addToDay(
+      today,
+      pages: pages,
+      chapters: chapterDone ? 1 : 0,
+      xp: gained,
+      seconds: time,
+    );
     data['totalPages'] = totalPages + pages;
     data['totalChapters'] = totalChapters + (chapterDone ? 1 : 0);
     data['totalXp'] = totalXp + gained;
+    data['totalSeconds'] = totalSeconds + time;
+    _sessionPages += pages;
+    _sessionXp += gained;
+    _recordSessionStats();
+    final hours = List<int>.from(
+      (data['hours'] as List?)?.whereType<int>() ?? const <int>[],
+    );
+    if (hours.length == 24) {
+      hours[at.hour] += pages > 0 ? pages : 1;
+      data['hours'] = hours;
+    }
 
     _recordTimeOfDay(at);
     if (!wasActive) _recordNewActiveDay(at, previousActive);
@@ -791,6 +1544,13 @@ class HabitStore extends ChangeNotifier {
     }
     _updateBests(todayStats);
 
+    final weeklyAfter = weeklyChallenge(now: at);
+    for (var i = 0; i < weeklyTiers.length; i++) {
+      if (!weeklyBefore.reached(i) && weeklyAfter.reached(i)) {
+        _celebrations.add('weekly-ready:$i');
+      }
+    }
+
     if (!wasActive) _celebrations.add('streak-extended:$streak');
     if ((!wasActive || repaired) && isStreakMilestone(streak)) {
       _celebrations.add('streak:$streak');
@@ -803,8 +1563,62 @@ class HabitStore extends ChangeNotifier {
     final afterLevel = levelForXp(totalXp).level;
     if (afterLevel > beforeLevel) {
       _celebrations.add('level:$afterLevel');
+      final rankBefore = ((beforeLevel - 1) ~/ levelsPerSequence).clamp(0, 9);
+      final rankAfter = ((afterLevel - 1) ~/ levelsPerSequence).clamp(0, 9);
+      if (rankAfter > rankBefore) {
+        _celebrations.add('sequence:${9 - rankAfter}');
+      }
     }
+    gains.value = XpGain(gained, bonus, bonusPct, chapterDone, at);
     await persist();
+  }
+
+  /// Folds the time since the last reading event into the session, and
+  /// returns the seconds to count. A gap longer than [sessionGapSeconds]
+  /// starts a new session without counting the idle time.
+  int _trackSession(DateTime at) {
+    final last = _lastEventAt;
+    var seconds = 0;
+    if (last == null || at.difference(last).inSeconds > sessionGapSeconds) {
+      _sessionSeconds = 0;
+      _sessionPages = 0;
+      _sessionXp = 0;
+      _sessionFocused = false;
+    } else if (at.isAfter(last)) {
+      seconds = at.difference(last).inSeconds;
+    }
+    if (last == null || !at.isBefore(last)) _lastEventAt = at;
+    _sessionSeconds += seconds;
+    return seconds;
+  }
+
+  void _recordSessionStats() {
+    if (_sessionSeconds > longestSession) {
+      data['longestSession'] = _sessionSeconds;
+    }
+    if (!_sessionFocused && _sessionSeconds >= focusMinutes * 60) {
+      _sessionFocused = true;
+      data['focusSessions'] = focusSessions + 1;
+      _celebrations.add('focus');
+    }
+  }
+
+  /// The session in progress, or null after [sessionGapSeconds] of quiet.
+  ReadingSession? session({DateTime? now}) {
+    final last = _lastEventAt;
+    final t = now ?? DateTime.now();
+    if (last == null || t.difference(last).inSeconds > sessionGapSeconds) {
+      return null;
+    }
+    return ReadingSession(_sessionSeconds, _sessionPages, _sessionXp);
+  }
+
+  /// Flame tier bonus plus the focus bonus, as a percentage of base XP.
+  int currentBonusPct({DateTime? now}) {
+    final t = now ?? DateTime.now();
+    final tierBonus = tierXpBonus[streakTier(currentStreak(now: t)).name] ?? 0;
+    final focus = session(now: t)?.focus == true ? focusBonusPct : 0;
+    return tierBonus + focus;
   }
 
   void _addToDay(
@@ -812,6 +1626,7 @@ class HabitStore extends ChangeNotifier {
     int pages = 0,
     int chapters = 0,
     int xp = 0,
+    int seconds = 0,
     bool quests = false,
   }) {
     final days = _days;
@@ -821,6 +1636,12 @@ class HabitStore extends ChangeNotifier {
     day['pages'] = (day['pages'] as int? ?? 0) + pages;
     day['chapters'] = (day['chapters'] as int? ?? 0) + chapters;
     day['xp'] = (day['xp'] as int? ?? 0) + xp;
+    if (seconds > 0) {
+      day['seconds'] = ((day['seconds'] as int? ?? 0) + seconds).clamp(
+        0,
+        86400,
+      );
+    }
     if (quests) day['quests'] = true;
     days[key] = day;
     data['days'] = days;
@@ -862,7 +1683,9 @@ class HabitStore extends ChangeNotifier {
   }
 
   void _updateBests(Map<String, dynamic> day) {
-    if ((day['pages'] as int) > bestDayPages) data['bestDayPages'] = day['pages'];
+    if ((day['pages'] as int) > bestDayPages) {
+      data['bestDayPages'] = day['pages'];
+    }
     if ((day['chapters'] as int) > bestDayChapters) {
       data['bestDayChapters'] = day['chapters'];
     }
@@ -1025,14 +1848,16 @@ class HabitStore extends ChangeNotifier {
     final longest = data['longestStreak'] as int? ?? 0;
     if (longest < freezeEveryStreak) return;
     final awarded = List<int>.from(
-      (data['freezeMilestones'] as List? ?? [])
-          .whereType<num>()
-          .map((n) => n.round()),
+      (data['freezeMilestones'] as List? ?? []).whereType<num>().map(
+        (n) => n.round(),
+      ),
     );
     var changed = false;
-    for (var milestone = freezeEveryStreak;
-        milestone <= longest;
-        milestone += freezeEveryStreak) {
+    for (
+      var milestone = freezeEveryStreak;
+      milestone <= longest;
+      milestone += freezeEveryStreak
+    ) {
       if (awarded.contains(milestone)) continue;
       awarded.add(milestone);
       final banked = data['freezes'] as int? ?? 0;
@@ -1065,6 +1890,12 @@ class HabitStore extends ChangeNotifier {
     data['floors'] = floors;
     final lost = data['lostStreak'];
     if (lost is Map && lost['on'] != dateKey(now)) data['lostStreak'] = null;
+    final claims = Map<String, dynamic>.from(data['weekClaims'] as Map? ?? {})
+      ..removeWhere(
+        (key, _) =>
+            key.compareTo(dateKey(now.subtract(const Duration(days: 63)))) < 0,
+      );
+    data['weekClaims'] = claims;
   }
 
   /// Current value of an achievement metric.
@@ -1089,18 +1920,20 @@ class HabitStore extends ChangeNotifier {
   /// Locked achievements closest to unlocking, best first.
   List<Achievement> nextAchievements([int count = 3]) {
     final unlocked = unlockedAchievements.toSet();
-    final locked = [
-      for (final a in achievements)
-        if (!unlocked.contains(a.id) && metricValue(a.metric) > 0) a,
-    ]..sort((a, b) => (achievementProgress(b) / b.target)
-        .compareTo(achievementProgress(a) / a.target));
+    final locked =
+        [
+          for (final a in achievements)
+            if (!unlocked.contains(a.id) && metricValue(a.metric) > 0) a,
+        ]..sort(
+          (a, b) => (achievementProgress(b) / b.target).compareTo(
+            achievementProgress(a) / a.target,
+          ),
+        );
     return locked.take(count).toList();
   }
 
   void _evaluateAchievements(DateTime at) {
-    final unlocked = List<String>.from(
-      data['achievements'] as List? ?? [],
-    );
+    final unlocked = List<String>.from(data['achievements'] as List? ?? []);
     final dates = Map<String, dynamic>.from(
       data['achievementDates'] as Map? ?? {},
     );
@@ -1134,25 +1967,52 @@ class HabitStore extends ChangeNotifier {
     final distinctTarget = target >= 100 ? 3 : 2;
     final overtime = (target * 3 / 2).round();
     final pool = [
-      DailyQuest('pages', 'Read $pageTarget pages', Icons.auto_stories_outlined,
-          pages, pageTarget),
       DailyQuest(
-          'chapter',
-          chapterTarget == 1 ? 'Finish a chapter' : 'Finish $chapterTarget chapters',
-          Icons.done_all,
-          chapters,
-          chapterTarget),
-      DailyQuest('distinct', 'Open $distinctTarget different chapters',
-          Icons.layers_outlined, distinct, distinctTarget),
-      DailyQuest('overtime', 'Earn $overtime XP', Icons.rocket_launch_outlined,
-          xp, overtime),
+        'pages',
+        'Read $pageTarget pages',
+        Icons.auto_stories_outlined,
+        pages,
+        pageTarget,
+      ),
+      DailyQuest(
+        'chapter',
+        chapterTarget == 1
+            ? 'Finish a chapter'
+            : 'Finish $chapterTarget chapters',
+        Icons.done_all,
+        chapters,
+        chapterTarget,
+      ),
+      DailyQuest(
+        'distinct',
+        'Open $distinctTarget different chapters',
+        Icons.layers_outlined,
+        distinct,
+        distinctTarget,
+      ),
+      DailyQuest(
+        'overtime',
+        'Earn $overtime XP',
+        Icons.rocket_launch_outlined,
+        xp,
+        overtime,
+      ),
     ];
-    final seed = key.codeUnits.fold<int>(7, (h, c) => (h * 31 + c) & 0x7fffffff);
+    final seed = key.codeUnits.fold<int>(
+      7,
+      (h, c) => (h * 31 + c) & 0x7fffffff,
+    );
     final first = seed % pool.length;
-    final second = (first + 1 + (seed ~/ pool.length) % (pool.length - 1)) %
-        pool.length;
+    final second =
+        (first + 1 + (seed ~/ pool.length) % (pool.length - 1)) % pool.length;
     return [
-      DailyQuest('goal', 'Meet your daily goal', Icons.flag_outlined, xp, target),
+      DailyQuest(
+        'goal',
+        'Meet your daily goal',
+        Icons.flag_outlined,
+        xp,
+        target,
+      ),
       pool[first],
       pool[second],
     ];
@@ -1164,12 +2024,216 @@ class HabitStore extends ChangeNotifier {
 
   /// Celebrations queued since the last call: `goal`, `quests`,
   /// `level:<n>`, `achievement:<id>`, `streak-extended:<n>`, `streak:<n>`
-  /// (a milestone), `repaired:<n>`, `freeze-used:<n>` or `freeze-earned`.
+  /// (a milestone), `repaired:<n>`, `freeze-used:<n>`, `freeze-earned`,
+  /// `focus`, `weekly-ready:<tier>` or `sequence:<n>`.
   /// The UI shows them once and clears the queue.
   List<String> consumeCelebrations() {
     final pending = List<String>.from(_celebrations);
     _celebrations.clear();
     return pending;
+  }
+
+  // ---------------------------------------------------------------------
+  // Rewards: the daily mystery chest and the weekly challenge.
+
+  /// Grants reward XP (chests, weekly tiers). Reward XP raises the level but
+  /// not the day's XP, so it never feeds back into goals or the challenge.
+  void _grantRewardXp(int xp, DateTime at) {
+    final beforeLevel = level.level;
+    data['totalXp'] = totalXp + xp;
+    data['rewardXp'] = rewardXp + xp;
+    final afterLevel = level.level;
+    if (afterLevel > beforeLevel) {
+      _celebrations.add('level:$afterLevel');
+      final rankBefore = ((beforeLevel - 1) ~/ levelsPerSequence).clamp(0, 9);
+      final rankAfter = ((afterLevel - 1) ~/ levelsPerSequence).clamp(0, 9);
+      if (rankAfter > rankBefore) {
+        _celebrations.add('sequence:${9 - rankAfter}');
+      }
+    }
+  }
+
+  bool _grantFreeze() {
+    final banked = freezes;
+    if (banked >= maxFreezes) return false;
+    data['freezes'] = banked + 1;
+    return true;
+  }
+
+  /// A mystery chest unlocks every day the daily goal is met.
+  bool chestAvailable({DateTime? now}) {
+    final key = dateKey(now ?? DateTime.now());
+    return _goalMetFor(key) && data['chestOpenedOn'] != key;
+  }
+
+  /// The chest's contents are fixed per day so reopening the app can't
+  /// re-roll them.
+  ChestReward chestFor(String key) {
+    final seed = '$key/chest'.codeUnits.fold<int>(
+      17,
+      (h, c) => (h * 37 + c) & 0x7fffffff,
+    );
+    final roll = (seed ~/ 7) % 100;
+    final scale = (goalTargetXp / 50).clamp(.5, 3).toDouble();
+    int xp(int base) => (base * scale).round();
+    if (roll < 55) return ChestReward('common', xp(10 + seed % 11));
+    if (roll < 85) return ChestReward('rare', xp(25 + seed % 16));
+    if (roll < 97) {
+      return freezes < maxFreezes
+          ? ChestReward('epic', xp(20), freeze: true)
+          : ChestReward('epic', xp(60));
+    }
+    return ChestReward('legendary', xp(100), freeze: freezes < maxFreezes);
+  }
+
+  /// Opens today's chest. Returns null when there is none to open.
+  Future<ChestReward?> openChest({DateTime? now}) async {
+    final at = now ?? DateTime.now();
+    if (!chestAvailable(now: at)) return null;
+    final key = dateKey(at);
+    final reward = chestFor(key);
+    data['chestOpenedOn'] = key;
+    data['chestsOpened'] = chestsOpened + 1;
+    _grantRewardXp(reward.xp, at);
+    if (reward.freeze) _grantFreeze();
+    _evaluateAchievements(at);
+    await persist();
+    return reward;
+  }
+
+  static DateTime _monday(DateTime t) {
+    final d = DateTime(t.year, t.month, t.day);
+    return d.subtract(Duration(days: d.weekday - 1));
+  }
+
+  /// This week's challenge: XP earned Monday–today against three tiers.
+  WeeklyChallenge weeklyChallenge({DateTime? now}) {
+    final t = now ?? DateTime.now();
+    final monday = _monday(t);
+    var xp = 0;
+    for (var i = 0; i < 7; i++) {
+      final d = DateTime(monday.year, monday.month, monday.day + i);
+      xp += dayStats(dateKey(d))['xp'] as int;
+    }
+    final week = dateKey(monday);
+    final claims = (data['weekClaims'] as Map?)?[week];
+    return WeeklyChallenge(
+      week,
+      xp,
+      [for (final tier in weeklyTiers) goalTargetXp * tier.multiplier],
+      {if (claims is List) ...claims.whereType<int>()},
+      DateTime(monday.year, monday.month, monday.day + 7),
+    );
+  }
+
+  /// Rewards waiting on the Progress tab: today's chest and weekly tiers.
+  int rewardsWaiting({DateTime? now}) =>
+      (chestAvailable(now: now) ? 1 : 0) +
+      weeklyChallenge(now: now).claimableCount;
+
+  /// Claims a reached weekly tier. Returns the tier, or null.
+  Future<WeeklyTier?> claimWeekly(int tierIndex, {DateTime? now}) async {
+    final at = now ?? DateTime.now();
+    final challenge = weeklyChallenge(now: at);
+    if (tierIndex < 0 ||
+        tierIndex >= weeklyTiers.length ||
+        !challenge.claimable(tierIndex)) {
+      return null;
+    }
+    final tier = weeklyTiers[tierIndex];
+    final claims = Map<String, dynamic>.from(data['weekClaims'] as Map? ?? {});
+    claims[challenge.week] = ([...challenge.claimed, tierIndex]..sort());
+    data['weekClaims'] = claims;
+    data['weeklyClaims'] = _int('weeklyClaims') + 1;
+    if (tierIndex == weeklyTiers.length - 1) {
+      data['weeklyGolds'] = _int('weeklyGolds') + 1;
+    }
+    _grantRewardXp(tier.rewardXp, at);
+    if (tier.freeze) _grantFreeze();
+    _evaluateAchievements(at);
+    await persist();
+    return tier;
+  }
+
+  // ---------------------------------------------------------------------
+  // Journey and insights.
+
+  /// Distinct chapter numbers finished in [book], across translations.
+  Set<int> completedChapters(String book) => {
+    for (final raw in List<String>.from(
+      data['chaptersCompleted'] as List? ?? [],
+    ))
+      if (raw.startsWith('$book/')) int.parse(raw.split('/').last),
+  };
+
+  ReadingInsights insights({DateTime? now}) {
+    final days = recentDays(30, now: now);
+    final active = days.where((d) => d.xp > 0).toList();
+    var seconds = 0;
+    for (final d in active) {
+      seconds += dayStats(d.key)['seconds'] as int;
+    }
+    final hours = List<int>.from(
+      (data['hours'] as List?)?.whereType<int>() ?? const <int>[],
+    );
+    String? period;
+    if (hours.length == 24 && hours.any((h) => h > 0)) {
+      const periods = {
+        'Early mornings': [4, 5, 6, 7],
+        'Mornings': [8, 9, 10, 11],
+        'Afternoons': [12, 13, 14, 15, 16],
+        'Evenings': [17, 18, 19, 20, 21],
+        'Late nights': [22, 23, 0, 1, 2, 3],
+      };
+      var best = 0;
+      for (final entry in periods.entries) {
+        final sum = entry.value.fold<int>(0, (s, h) => s + hours[h]);
+        if (sum > best) {
+          best = sum;
+          period = entry.key;
+        }
+      }
+    }
+    final byWeekday = List<int>.filled(7, 0);
+    for (final key in _days.keys) {
+      final d = parseDateKey(key);
+      if (d != null) byWeekday[d.weekday - 1] += dayStats(key)['xp'] as int;
+    }
+    const names = [
+      'Mondays',
+      'Tuesdays',
+      'Wednesdays',
+      'Thursdays',
+      'Fridays',
+      'Saturdays',
+      'Sundays',
+    ];
+    var bestDay = -1;
+    for (var i = 0; i < 7; i++) {
+      if (byWeekday[i] > 0 &&
+          (bestDay < 0 || byWeekday[i] > byWeekday[bestDay])) {
+        bestDay = i;
+      }
+    }
+    final fortnight = days.skip(16);
+    final chapters = fortnight.fold<int>(0, (s, d) => s + d.chapters);
+    return ReadingInsights(
+      activeDays: active.length,
+      averageXp: active.isEmpty
+          ? 0
+          : (active.fold<int>(0, (s, d) => s + d.xp) / active.length).round(),
+      averageMinutes: active.isEmpty
+          ? 0
+          : (seconds / active.length / 60).round(),
+      favoritePeriod: period,
+      bestWeekday: bestDay < 0 ? null : names[bestDay],
+      chaptersPerDay: chapters / 14,
+    );
+  }
+
+  Future<void> setReaderHud(bool enabled) async {
+    data['readerHud'] = enabled;
+    await persist();
   }
 
   Future<void> setGoal(String value) async {
@@ -1200,10 +2264,10 @@ class HabitStore extends ChangeNotifier {
     final state = (stats['xp'] as int) > 0
         ? DayState.active
         : _freezeDates.contains(key)
-            ? DayState.frozen
-            : _repairDates.contains(key)
-                ? DayState.repaired
-                : DayState.none;
+        ? DayState.frozen
+        : _repairDates.contains(key)
+        ? DayState.repaired
+        : DayState.none;
     return DayActivity(
       d,
       stats['pages'] as int,
@@ -1243,17 +2307,18 @@ class HabitStore extends ChangeNotifier {
   /// Last 7 days (oldest first) with single-letter weekday labels for the
   /// weekly chart.
   List<({String label, int xp, bool today})> get weekly => [
-        for (final d in recentDays(7))
-          (
-            label: const ['M', 'T', 'W', 'T', 'F', 'S', 'S'][d.date.weekday - 1],
-            xp: d.xp,
-            today: d.key == todayKey,
-          ),
-      ];
+    for (final d in recentDays(7))
+      (
+        label: const ['M', 'T', 'W', 'T', 'F', 'S', 'S'][d.date.weekday - 1],
+        xp: d.xp,
+        today: d.key == todayKey,
+      ),
+  ];
 
   @override
   void dispose() {
     _disposed = true;
+    gains.dispose();
     super.dispose();
   }
 }

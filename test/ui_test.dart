@@ -12,6 +12,8 @@ import 'package:lotm_reader/account_screen.dart';
 import 'package:lotm_reader/auth_store.dart';
 import 'package:lotm_reader/cloud_sync.dart';
 import 'package:lotm_reader/design.dart';
+import 'package:lotm_reader/habit_store.dart';
+import 'package:lotm_reader/progress_screen.dart';
 import 'package:lotm_reader/models.dart';
 import 'package:lotm_reader/reader_api.dart';
 import 'package:lotm_reader/state_store.dart';
@@ -331,4 +333,91 @@ void main() {
     expect(formatBytes(45000000, gb: true), '0.045 GB');
     expect(formatEta(735), '~13 min');
   });
+
+  for (final width in [360.0, 600.0]) {
+    testWidgets('progress screen fits at $width with enlarged text', (
+      tester,
+    ) async {
+      tester.view.physicalSize = Size(width, 9800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final dir = Directory('build/ui-preview/habits')
+        ..createSync(recursive: true);
+      final store = HabitStore(File('${dir.path}/progress-$width.json'));
+      await tester.runAsync(() async {
+        if (store.file.existsSync()) store.file.deleteSync();
+        await store.load();
+        // Twelve days of reading (a Flame streak), finishing a chapter a day.
+        final now = DateTime.now();
+        for (var d = 12; d >= 0; d--) {
+          final day = DateTime(
+            now.year,
+            now.month,
+            now.day,
+            9,
+          ).subtract(Duration(days: d));
+          for (var minute = 0; minute <= 20; minute++) {
+            await store.recordReading(
+              edition: d.isEven ? 'lotm/webnovel' : 'coi/webnovel',
+              slug: 13 - d,
+              ratio: minute == 20 ? 1 : minute / 20,
+              scroll: minute * 1200,
+              now: day.add(Duration(minutes: minute)),
+            );
+          }
+        }
+        store.consumeCelebrations();
+      });
+      final editions = [
+        Edition('lotm', 'webnovel', [
+          for (var i = 1; i <= 1430; i++)
+            Chapter(
+              'lotm',
+              'webnovel',
+              i,
+              'Chapter $i',
+              i < 200 ? 'Volume 1 - Clown' : 'Volume 2 - Faceless',
+              i - 1,
+            ),
+        ]),
+        Edition('coi', 'webnovel', [
+          for (var i = 1; i <= 1180; i++)
+            Chapter(
+              'coi',
+              'webnovel',
+              i,
+              'Chapter $i',
+              'Volume 1 - Nightmare',
+              i - 1,
+            ),
+        ]),
+      ];
+      final key = GlobalKey();
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: readerTheme(),
+          home: Builder(
+            builder: (context) => MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: const TextScaler.linear(1.25)),
+              child: RepaintBoundary(
+                key: key,
+                child: Scaffold(
+                  body: ProgressScreen(habits: store, editions: editions),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+      expect(find.text('Mystery chest ready!'), findsOneWidget);
+      expect(find.text('FLAME'), findsOneWidget);
+      await screenshot(tester, key, 'progress-${width.toInt()}');
+      store.dispose();
+    });
+  }
 }

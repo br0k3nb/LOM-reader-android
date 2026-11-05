@@ -127,16 +127,18 @@ class ReaderPanel extends StatelessWidget {
     required this.child,
     this.padding = const EdgeInsets.all(20),
     this.accent = false,
+    this.margin = const EdgeInsets.only(bottom: 16),
   });
   final Widget child;
   final EdgeInsetsGeometry padding;
   final bool accent;
+  final EdgeInsetsGeometry margin;
   @override
   Widget build(BuildContext context) => AnimatedContainer(
     duration: MediaQuery.disableAnimationsOf(context)
         ? Duration.zero
         : const Duration(milliseconds: 280),
-    margin: const EdgeInsets.only(bottom: 16),
+    margin: margin,
     padding: padding,
     decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(24),

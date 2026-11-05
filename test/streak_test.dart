@@ -351,7 +351,7 @@ void main() {
 
   group('widgets', () {
     Future<void> pumpScreen(WidgetTester tester, HabitStore store) async {
-      tester.view.physicalSize = const Size(420, 5200);
+      tester.view.physicalSize = const Size(420, 9000);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
