@@ -110,7 +110,7 @@ class _AccountScreenState extends State<AccountScreen> {
                   const SizedBox(height: 18),
                   Text(
                     auth.email ??
-                        'Sign in with your LOTM Reader account to sync your last chapter and reading activity with the website.',
+                        'Sign in with your LOTM Reader account to sync your last chapter, reading activity, streaks, XP and achievements with the website.',
                     style: const TextStyle(color: muted, height: 1.5),
                   ),
                 ],
@@ -400,7 +400,7 @@ class _AccountScreenState extends State<AccountScreen> {
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 8, vertical: 12),
             child: Text(
-              'Reading works without an account. Offline activity is saved and syncs when you reconnect. Downloads, bookmarks, notes, and appearance settings stay on this device; export a backup to move them.',
+              'Reading works without an account. Offline activity, streaks and XP are saved and sync when you reconnect. Downloads, bookmarks, notes, reminders and appearance settings stay on this device; export a backup to move them.',
               style: TextStyle(color: muted, fontSize: 12, height: 1.6),
             ),
           ),

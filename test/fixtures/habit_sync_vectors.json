@@ -1,0 +1,2793 @@
+{
+  "apply": [
+    {
+      "name": "first upload",
+      "now": "2026-11-07T12:00:00",
+      "doc": {
+        "version": 1,
+        "totalXp": 0,
+        "totalPages": 0,
+        "totalChapters": 0,
+        "freezes": 1,
+        "goalDays": 0,
+        "freezesUsed": 0,
+        "repairs": 0,
+        "comebacks": 0,
+        "questDays": 0,
+        "weekends": 0,
+        "overtimeDays": 0,
+        "totalSeconds": 0,
+        "focusSessions": 0,
+        "chestsOpened": 0,
+        "weeklyClaims": 0,
+        "weeklyGolds": 0,
+        "bonusXp": 0,
+        "rewardXp": 0,
+        "longestStreak": 0,
+        "longestGoalStreak": 0,
+        "bestDayPages": 0,
+        "bestDayChapters": 0,
+        "bestDayXp": 0,
+        "earlyBird": 0,
+        "nightOwl": 0,
+        "longestSession": 0,
+        "freezeDates": [],
+        "repairDates": [],
+        "goalDates": [],
+        "chaptersCompleted": [],
+        "achievements": [],
+        "hours": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "days": {},
+        "floors": {},
+        "weekClaims": {},
+        "achievementDates": {},
+        "freezeMilestones": [],
+        "chestOpenedOn": null,
+        "chestReward": null,
+        "goalCelebratedOn": null,
+        "goal": "regular",
+        "goalUpdatedAt": 0
+      },
+      "delta": {
+        "add": {
+          "totalXp": 224,
+          "totalPages": 73,
+          "totalChapters": 2,
+          "freezes": -1,
+          "goalDays": 2,
+          "freezesUsed": 1,
+          "questDays": 1,
+          "overtimeDays": 2,
+          "chestsOpened": 1,
+          "rewardXp": 13
+        },
+        "hours": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          30,
+          0,
+          0,
+          0,
+          0,
+          0,
+          43,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "days": {
+          "2026-11-04": {
+            "pages": 3,
+            "xp": 6
+          },
+          "2026-11-05": {
+            "pages": 40,
+            "chapters": 1,
+            "xp": 105
+          },
+          "2026-11-07": {
+            "pages": 30,
+            "chapters": 1,
+            "xp": 100,
+            "quests": true
+          }
+        },
+        "max": {
+          "longestStreak": 3,
+          "longestGoalStreak": 1,
+          "bestDayPages": 40,
+          "bestDayChapters": 1,
+          "bestDayXp": 105,
+          "earlyBird": 1
+        },
+        "floors": {
+          "coi/pt-br/3/2026-11-07": 29,
+          "lotm/webnovel/1/2026-11-04": 2,
+          "lotm/webnovel/2/2026-11-05": 39
+        },
+        "sets": {
+          "freezeDates": [
+            "2026-11-06"
+          ],
+          "goalDates": [
+            "2026-11-05",
+            "2026-11-07"
+          ],
+          "chaptersCompleted": [
+            "coi/pt-br/3",
+            "lotm/webnovel/2"
+          ],
+          "achievements": [
+            "chest-1",
+            "early-bird",
+            "first-chapter",
+            "first-page",
+            "freeze-saved",
+            "goal-1",
+            "overachiever",
+            "quests-1",
+            "streak-3",
+            "two-worlds",
+            "xp-100"
+          ]
+        },
+        "achievementDates": {
+          "chest-1": "2026-11-07",
+          "early-bird": "2026-11-07",
+          "first-chapter": "2026-11-05",
+          "first-page": "2026-11-04",
+          "freeze-saved": "2026-11-07",
+          "goal-1": "2026-11-05",
+          "overachiever": "2026-11-05",
+          "quests-1": "2026-11-07",
+          "streak-3": "2026-11-07",
+          "two-worlds": "2026-11-07",
+          "xp-100": "2026-11-05"
+        },
+        "chestOpenedOn": "2026-11-07",
+        "chestReward": {
+          "on": "2026-11-07",
+          "xp": 13,
+          "freeze": false
+        },
+        "goalCelebratedOn": "2026-11-07",
+        "goal": {
+          "value": "serious",
+          "at": 1762500000000
+        }
+      },
+      "expected": {
+        "version": 1,
+        "totalXp": 224,
+        "totalPages": 73,
+        "totalChapters": 2,
+        "freezes": 0,
+        "goalDays": 2,
+        "freezesUsed": 1,
+        "repairs": 0,
+        "comebacks": 0,
+        "questDays": 1,
+        "weekends": 0,
+        "overtimeDays": 2,
+        "totalSeconds": 0,
+        "focusSessions": 0,
+        "chestsOpened": 1,
+        "weeklyClaims": 0,
+        "weeklyGolds": 0,
+        "bonusXp": 0,
+        "rewardXp": 13,
+        "longestStreak": 3,
+        "longestGoalStreak": 1,
+        "bestDayPages": 40,
+        "bestDayChapters": 1,
+        "bestDayXp": 105,
+        "earlyBird": 1,
+        "nightOwl": 0,
+        "longestSession": 0,
+        "freezeDates": [
+          "2026-11-06"
+        ],
+        "repairDates": [],
+        "goalDates": [
+          "2026-11-05",
+          "2026-11-07"
+        ],
+        "chaptersCompleted": [
+          "coi/pt-br/3",
+          "lotm/webnovel/2"
+        ],
+        "achievements": [
+          "chest-1",
+          "early-bird",
+          "first-chapter",
+          "first-page",
+          "freeze-saved",
+          "goal-1",
+          "overachiever",
+          "quests-1",
+          "streak-3",
+          "two-worlds",
+          "xp-100"
+        ],
+        "hours": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          30,
+          0,
+          0,
+          0,
+          0,
+          0,
+          43,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "days": {
+          "2026-11-04": {
+            "pages": 3,
+            "chapters": 0,
+            "xp": 6
+          },
+          "2026-11-05": {
+            "pages": 40,
+            "chapters": 1,
+            "xp": 105
+          },
+          "2026-11-07": {
+            "pages": 30,
+            "chapters": 1,
+            "xp": 100,
+            "quests": true
+          }
+        },
+        "floors": {
+          "coi/pt-br/3/2026-11-07": 29,
+          "lotm/webnovel/1/2026-11-04": 2,
+          "lotm/webnovel/2/2026-11-05": 39
+        },
+        "weekClaims": {},
+        "achievementDates": {
+          "chest-1": "2026-11-07",
+          "early-bird": "2026-11-07",
+          "first-chapter": "2026-11-05",
+          "first-page": "2026-11-04",
+          "freeze-saved": "2026-11-07",
+          "goal-1": "2026-11-05",
+          "overachiever": "2026-11-05",
+          "quests-1": "2026-11-07",
+          "streak-3": "2026-11-07",
+          "two-worlds": "2026-11-07",
+          "xp-100": "2026-11-05"
+        },
+        "freezeMilestones": [],
+        "chestOpenedOn": "2026-11-07",
+        "chestReward": {
+          "on": "2026-11-07",
+          "xp": 13,
+          "freeze": false
+        },
+        "goalCelebratedOn": "2026-11-07",
+        "goal": "serious",
+        "goalUpdatedAt": 1762500000000
+      }
+    },
+    {
+      "name": "second device with duplicates",
+      "now": "2026-11-07T12:00:00",
+      "doc": {
+        "version": 1,
+        "totalXp": 224,
+        "totalPages": 73,
+        "totalChapters": 2,
+        "freezes": 0,
+        "goalDays": 2,
+        "freezesUsed": 1,
+        "repairs": 0,
+        "comebacks": 0,
+        "questDays": 1,
+        "weekends": 0,
+        "overtimeDays": 2,
+        "totalSeconds": 0,
+        "focusSessions": 0,
+        "chestsOpened": 1,
+        "weeklyClaims": 0,
+        "weeklyGolds": 0,
+        "bonusXp": 0,
+        "rewardXp": 13,
+        "longestStreak": 3,
+        "longestGoalStreak": 1,
+        "bestDayPages": 40,
+        "bestDayChapters": 1,
+        "bestDayXp": 105,
+        "earlyBird": 1,
+        "nightOwl": 0,
+        "longestSession": 0,
+        "freezeDates": [
+          "2026-11-06"
+        ],
+        "repairDates": [],
+        "goalDates": [
+          "2026-11-05",
+          "2026-11-07"
+        ],
+        "chaptersCompleted": [
+          "coi/pt-br/3",
+          "lotm/webnovel/2"
+        ],
+        "achievements": [
+          "chest-1",
+          "early-bird",
+          "first-chapter",
+          "first-page",
+          "freeze-saved",
+          "goal-1",
+          "overachiever",
+          "quests-1",
+          "streak-3",
+          "two-worlds",
+          "xp-100"
+        ],
+        "hours": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          30,
+          0,
+          0,
+          0,
+          0,
+          0,
+          43,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "days": {
+          "2026-11-04": {
+            "pages": 3,
+            "chapters": 0,
+            "xp": 6
+          },
+          "2026-11-05": {
+            "pages": 40,
+            "chapters": 1,
+            "xp": 105
+          },
+          "2026-11-07": {
+            "pages": 30,
+            "chapters": 1,
+            "xp": 100,
+            "quests": true
+          }
+        },
+        "floors": {
+          "coi/pt-br/3/2026-11-07": 29,
+          "lotm/webnovel/1/2026-11-04": 2,
+          "lotm/webnovel/2/2026-11-05": 39
+        },
+        "weekClaims": {},
+        "achievementDates": {
+          "chest-1": "2026-11-07",
+          "early-bird": "2026-11-07",
+          "first-chapter": "2026-11-05",
+          "first-page": "2026-11-04",
+          "freeze-saved": "2026-11-07",
+          "goal-1": "2026-11-05",
+          "overachiever": "2026-11-05",
+          "quests-1": "2026-11-07",
+          "streak-3": "2026-11-07",
+          "two-worlds": "2026-11-07",
+          "xp-100": "2026-11-05"
+        },
+        "freezeMilestones": [],
+        "chestOpenedOn": "2026-11-07",
+        "chestReward": {
+          "on": "2026-11-07",
+          "xp": 13,
+          "freeze": false
+        },
+        "goalCelebratedOn": "2026-11-07",
+        "goal": "serious",
+        "goalUpdatedAt": 1762500000000
+      },
+      "delta": {
+        "add": {
+          "totalXp": 137,
+          "totalPages": 42,
+          "totalChapters": 1,
+          "freezes": -1,
+          "goalDays": 1,
+          "freezesUsed": 1,
+          "questDays": 1,
+          "overtimeDays": 1,
+          "chestsOpened": 1,
+          "rewardXp": 13
+        },
+        "hours": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          12,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          30
+        ],
+        "days": {
+          "2026-11-05": {
+            "pages": 12,
+            "xp": 24
+          },
+          "2026-11-07": {
+            "pages": 30,
+            "chapters": 1,
+            "xp": 100,
+            "quests": true
+          }
+        },
+        "max": {
+          "longestStreak": 2,
+          "longestGoalStreak": 1,
+          "bestDayPages": 30,
+          "bestDayChapters": 1,
+          "bestDayXp": 100,
+          "nightOwl": 1
+        },
+        "floors": {
+          "coi/pt-br/3/2026-11-07": 29,
+          "lotm/webnovel/9/2026-11-05": 11
+        },
+        "sets": {
+          "freezeDates": [
+            "2026-11-06"
+          ],
+          "goalDates": [
+            "2026-11-07"
+          ],
+          "chaptersCompleted": [
+            "coi/pt-br/3"
+          ],
+          "achievements": [
+            "chest-1",
+            "first-chapter",
+            "first-page",
+            "freeze-saved",
+            "goal-1",
+            "night-owl",
+            "overachiever",
+            "quests-1",
+            "xp-100"
+          ]
+        },
+        "achievementDates": {
+          "chest-1": "2026-11-07",
+          "first-chapter": "2026-11-07",
+          "first-page": "2026-11-05",
+          "freeze-saved": "2026-11-07",
+          "goal-1": "2026-11-07",
+          "night-owl": "2026-11-07",
+          "overachiever": "2026-11-07",
+          "quests-1": "2026-11-07",
+          "xp-100": "2026-11-07"
+        },
+        "chestOpenedOn": "2026-11-07",
+        "chestReward": {
+          "on": "2026-11-07",
+          "xp": 13,
+          "freeze": false
+        },
+        "goalCelebratedOn": "2026-11-07"
+      },
+      "expected": {
+        "version": 1,
+        "totalXp": 308,
+        "totalPages": 115,
+        "totalChapters": 2,
+        "freezes": 0,
+        "goalDays": 2,
+        "freezesUsed": 1,
+        "repairs": 0,
+        "comebacks": 0,
+        "questDays": 1,
+        "weekends": 0,
+        "overtimeDays": 3,
+        "totalSeconds": 0,
+        "focusSessions": 0,
+        "chestsOpened": 1,
+        "weeklyClaims": 0,
+        "weeklyGolds": 0,
+        "bonusXp": 0,
+        "rewardXp": 13,
+        "longestStreak": 3,
+        "longestGoalStreak": 1,
+        "bestDayPages": 40,
+        "bestDayChapters": 1,
+        "bestDayXp": 105,
+        "earlyBird": 1,
+        "nightOwl": 1,
+        "longestSession": 0,
+        "freezeDates": [
+          "2026-11-06"
+        ],
+        "repairDates": [],
+        "goalDates": [
+          "2026-11-05",
+          "2026-11-07"
+        ],
+        "chaptersCompleted": [
+          "coi/pt-br/3",
+          "lotm/webnovel/2"
+        ],
+        "achievements": [
+          "chest-1",
+          "early-bird",
+          "first-chapter",
+          "first-page",
+          "freeze-saved",
+          "goal-1",
+          "night-owl",
+          "overachiever",
+          "quests-1",
+          "streak-3",
+          "two-worlds",
+          "xp-100"
+        ],
+        "hours": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          30,
+          0,
+          0,
+          0,
+          0,
+          0,
+          55,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          30
+        ],
+        "days": {
+          "2026-11-04": {
+            "pages": 3,
+            "chapters": 0,
+            "xp": 6
+          },
+          "2026-11-05": {
+            "pages": 52,
+            "chapters": 1,
+            "xp": 129
+          },
+          "2026-11-07": {
+            "pages": 60,
+            "chapters": 2,
+            "xp": 185,
+            "quests": true
+          }
+        },
+        "floors": {
+          "coi/pt-br/3/2026-11-07": 29,
+          "lotm/webnovel/1/2026-11-04": 2,
+          "lotm/webnovel/2/2026-11-05": 39,
+          "lotm/webnovel/9/2026-11-05": 11
+        },
+        "weekClaims": {},
+        "achievementDates": {
+          "chest-1": "2026-11-07",
+          "early-bird": "2026-11-07",
+          "first-chapter": "2026-11-05",
+          "first-page": "2026-11-04",
+          "freeze-saved": "2026-11-07",
+          "goal-1": "2026-11-05",
+          "night-owl": "2026-11-07",
+          "overachiever": "2026-11-05",
+          "quests-1": "2026-11-07",
+          "streak-3": "2026-11-07",
+          "two-worlds": "2026-11-07",
+          "xp-100": "2026-11-05"
+        },
+        "freezeMilestones": [],
+        "chestOpenedOn": "2026-11-07",
+        "chestReward": {
+          "on": "2026-11-07",
+          "xp": 13,
+          "freeze": false
+        },
+        "goalCelebratedOn": "2026-11-07",
+        "goal": "serious",
+        "goalUpdatedAt": 1762500000000
+      }
+    },
+    {
+      "name": "refund weekly duplicate",
+      "now": "2026-11-07T12:00:00",
+      "doc": {
+        "version": 1,
+        "totalXp": 224,
+        "totalPages": 73,
+        "totalChapters": 2,
+        "freezes": 0,
+        "goalDays": 2,
+        "freezesUsed": 1,
+        "repairs": 0,
+        "comebacks": 0,
+        "questDays": 1,
+        "weekends": 0,
+        "overtimeDays": 2,
+        "totalSeconds": 0,
+        "focusSessions": 0,
+        "chestsOpened": 1,
+        "weeklyClaims": 0,
+        "weeklyGolds": 0,
+        "bonusXp": 0,
+        "rewardXp": 13,
+        "longestStreak": 3,
+        "longestGoalStreak": 1,
+        "bestDayPages": 40,
+        "bestDayChapters": 1,
+        "bestDayXp": 105,
+        "earlyBird": 1,
+        "nightOwl": 0,
+        "longestSession": 0,
+        "freezeDates": [
+          "2026-11-06"
+        ],
+        "repairDates": [],
+        "goalDates": [
+          "2026-11-05",
+          "2026-11-07"
+        ],
+        "chaptersCompleted": [
+          "coi/pt-br/3",
+          "lotm/webnovel/2"
+        ],
+        "achievements": [
+          "chest-1",
+          "early-bird",
+          "first-chapter",
+          "first-page",
+          "freeze-saved",
+          "goal-1",
+          "overachiever",
+          "quests-1",
+          "streak-3",
+          "two-worlds",
+          "xp-100"
+        ],
+        "hours": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          30,
+          0,
+          0,
+          0,
+          0,
+          0,
+          43,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "days": {
+          "2026-11-04": {
+            "pages": 3,
+            "chapters": 0,
+            "xp": 6
+          },
+          "2026-11-05": {
+            "pages": 40,
+            "chapters": 1,
+            "xp": 105
+          },
+          "2026-11-07": {
+            "pages": 30,
+            "chapters": 1,
+            "xp": 100,
+            "quests": true
+          }
+        },
+        "floors": {
+          "coi/pt-br/3/2026-11-07": 29,
+          "lotm/webnovel/1/2026-11-04": 2,
+          "lotm/webnovel/2/2026-11-05": 39
+        },
+        "weekClaims": {
+          "2026-11-02": [
+            0
+          ]
+        },
+        "achievementDates": {
+          "chest-1": "2026-11-07",
+          "early-bird": "2026-11-07",
+          "first-chapter": "2026-11-05",
+          "first-page": "2026-11-04",
+          "freeze-saved": "2026-11-07",
+          "goal-1": "2026-11-05",
+          "overachiever": "2026-11-05",
+          "quests-1": "2026-11-07",
+          "streak-3": "2026-11-07",
+          "two-worlds": "2026-11-07",
+          "xp-100": "2026-11-05"
+        },
+        "freezeMilestones": [],
+        "chestOpenedOn": "2026-11-07",
+        "chestReward": {
+          "on": "2026-11-07",
+          "xp": 13,
+          "freeze": false
+        },
+        "goalCelebratedOn": "2026-11-07",
+        "goal": "serious",
+        "goalUpdatedAt": 1762500000000
+      },
+      "delta": {
+        "weekClaims": {
+          "2026-11-02": [
+            0,
+            1
+          ]
+        },
+        "add": {
+          "weeklyClaims": 2,
+          "rewardXp": 60,
+          "totalXp": 60
+        }
+      },
+      "expected": {
+        "version": 1,
+        "totalXp": 264,
+        "totalPages": 73,
+        "totalChapters": 2,
+        "freezes": 0,
+        "goalDays": 2,
+        "freezesUsed": 1,
+        "repairs": 0,
+        "comebacks": 0,
+        "questDays": 1,
+        "weekends": 0,
+        "overtimeDays": 2,
+        "totalSeconds": 0,
+        "focusSessions": 0,
+        "chestsOpened": 1,
+        "weeklyClaims": 1,
+        "weeklyGolds": 0,
+        "bonusXp": 0,
+        "rewardXp": 53,
+        "longestStreak": 3,
+        "longestGoalStreak": 1,
+        "bestDayPages": 40,
+        "bestDayChapters": 1,
+        "bestDayXp": 105,
+        "earlyBird": 1,
+        "nightOwl": 0,
+        "longestSession": 0,
+        "freezeDates": [
+          "2026-11-06"
+        ],
+        "repairDates": [],
+        "goalDates": [
+          "2026-11-05",
+          "2026-11-07"
+        ],
+        "chaptersCompleted": [
+          "coi/pt-br/3",
+          "lotm/webnovel/2"
+        ],
+        "achievements": [
+          "chest-1",
+          "early-bird",
+          "first-chapter",
+          "first-page",
+          "freeze-saved",
+          "goal-1",
+          "overachiever",
+          "quests-1",
+          "streak-3",
+          "two-worlds",
+          "xp-100"
+        ],
+        "hours": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          30,
+          0,
+          0,
+          0,
+          0,
+          0,
+          43,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "days": {
+          "2026-11-04": {
+            "pages": 3,
+            "chapters": 0,
+            "xp": 6
+          },
+          "2026-11-05": {
+            "pages": 40,
+            "chapters": 1,
+            "xp": 105
+          },
+          "2026-11-07": {
+            "pages": 30,
+            "chapters": 1,
+            "xp": 100,
+            "quests": true
+          }
+        },
+        "floors": {
+          "coi/pt-br/3/2026-11-07": 29,
+          "lotm/webnovel/1/2026-11-04": 2,
+          "lotm/webnovel/2/2026-11-05": 39
+        },
+        "weekClaims": {
+          "2026-11-02": [
+            0,
+            1
+          ]
+        },
+        "achievementDates": {
+          "chest-1": "2026-11-07",
+          "early-bird": "2026-11-07",
+          "first-chapter": "2026-11-05",
+          "first-page": "2026-11-04",
+          "freeze-saved": "2026-11-07",
+          "goal-1": "2026-11-05",
+          "overachiever": "2026-11-05",
+          "quests-1": "2026-11-07",
+          "streak-3": "2026-11-07",
+          "two-worlds": "2026-11-07",
+          "xp-100": "2026-11-05"
+        },
+        "freezeMilestones": [],
+        "chestOpenedOn": "2026-11-07",
+        "chestReward": {
+          "on": "2026-11-07",
+          "xp": 13,
+          "freeze": false
+        },
+        "goalCelebratedOn": "2026-11-07",
+        "goal": "serious",
+        "goalUpdatedAt": 1762500000000
+      }
+    },
+    {
+      "name": "freeze milestone duplicate",
+      "now": "2026-11-07T12:00:00",
+      "doc": {
+        "version": 1,
+        "totalXp": 224,
+        "totalPages": 73,
+        "totalChapters": 2,
+        "freezes": 2,
+        "goalDays": 2,
+        "freezesUsed": 1,
+        "repairs": 0,
+        "comebacks": 0,
+        "questDays": 1,
+        "weekends": 0,
+        "overtimeDays": 2,
+        "totalSeconds": 0,
+        "focusSessions": 0,
+        "chestsOpened": 1,
+        "weeklyClaims": 0,
+        "weeklyGolds": 0,
+        "bonusXp": 0,
+        "rewardXp": 13,
+        "longestStreak": 3,
+        "longestGoalStreak": 1,
+        "bestDayPages": 40,
+        "bestDayChapters": 1,
+        "bestDayXp": 105,
+        "earlyBird": 1,
+        "nightOwl": 0,
+        "longestSession": 0,
+        "freezeDates": [
+          "2026-11-06"
+        ],
+        "repairDates": [],
+        "goalDates": [
+          "2026-11-05",
+          "2026-11-07"
+        ],
+        "chaptersCompleted": [
+          "coi/pt-br/3",
+          "lotm/webnovel/2"
+        ],
+        "achievements": [
+          "chest-1",
+          "early-bird",
+          "first-chapter",
+          "first-page",
+          "freeze-saved",
+          "goal-1",
+          "overachiever",
+          "quests-1",
+          "streak-3",
+          "two-worlds",
+          "xp-100"
+        ],
+        "hours": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          30,
+          0,
+          0,
+          0,
+          0,
+          0,
+          43,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "days": {
+          "2026-11-04": {
+            "pages": 3,
+            "chapters": 0,
+            "xp": 6
+          },
+          "2026-11-05": {
+            "pages": 40,
+            "chapters": 1,
+            "xp": 105
+          },
+          "2026-11-07": {
+            "pages": 30,
+            "chapters": 1,
+            "xp": 100,
+            "quests": true
+          }
+        },
+        "floors": {
+          "coi/pt-br/3/2026-11-07": 29,
+          "lotm/webnovel/1/2026-11-04": 2,
+          "lotm/webnovel/2/2026-11-05": 39
+        },
+        "weekClaims": {},
+        "achievementDates": {
+          "chest-1": "2026-11-07",
+          "early-bird": "2026-11-07",
+          "first-chapter": "2026-11-05",
+          "first-page": "2026-11-04",
+          "freeze-saved": "2026-11-07",
+          "goal-1": "2026-11-05",
+          "overachiever": "2026-11-05",
+          "quests-1": "2026-11-07",
+          "streak-3": "2026-11-07",
+          "two-worlds": "2026-11-07",
+          "xp-100": "2026-11-05"
+        },
+        "freezeMilestones": [
+          10
+        ],
+        "chestOpenedOn": "2026-11-07",
+        "chestReward": {
+          "on": "2026-11-07",
+          "xp": 13,
+          "freeze": false
+        },
+        "goalCelebratedOn": "2026-11-07",
+        "goal": "serious",
+        "goalUpdatedAt": 1762500000000
+      },
+      "delta": {
+        "freezeMilestones": [
+          10,
+          20
+        ],
+        "add": {
+          "freezes": 2
+        }
+      },
+      "expected": {
+        "version": 1,
+        "totalXp": 224,
+        "totalPages": 73,
+        "totalChapters": 2,
+        "freezes": 2,
+        "goalDays": 2,
+        "freezesUsed": 1,
+        "repairs": 0,
+        "comebacks": 0,
+        "questDays": 1,
+        "weekends": 0,
+        "overtimeDays": 2,
+        "totalSeconds": 0,
+        "focusSessions": 0,
+        "chestsOpened": 1,
+        "weeklyClaims": 0,
+        "weeklyGolds": 0,
+        "bonusXp": 0,
+        "rewardXp": 13,
+        "longestStreak": 3,
+        "longestGoalStreak": 1,
+        "bestDayPages": 40,
+        "bestDayChapters": 1,
+        "bestDayXp": 105,
+        "earlyBird": 1,
+        "nightOwl": 0,
+        "longestSession": 0,
+        "freezeDates": [
+          "2026-11-06"
+        ],
+        "repairDates": [],
+        "goalDates": [
+          "2026-11-05",
+          "2026-11-07"
+        ],
+        "chaptersCompleted": [
+          "coi/pt-br/3",
+          "lotm/webnovel/2"
+        ],
+        "achievements": [
+          "chest-1",
+          "early-bird",
+          "first-chapter",
+          "first-page",
+          "freeze-saved",
+          "goal-1",
+          "overachiever",
+          "quests-1",
+          "streak-3",
+          "two-worlds",
+          "xp-100"
+        ],
+        "hours": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          30,
+          0,
+          0,
+          0,
+          0,
+          0,
+          43,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "days": {
+          "2026-11-04": {
+            "pages": 3,
+            "chapters": 0,
+            "xp": 6
+          },
+          "2026-11-05": {
+            "pages": 40,
+            "chapters": 1,
+            "xp": 105
+          },
+          "2026-11-07": {
+            "pages": 30,
+            "chapters": 1,
+            "xp": 100,
+            "quests": true
+          }
+        },
+        "floors": {
+          "coi/pt-br/3/2026-11-07": 29,
+          "lotm/webnovel/1/2026-11-04": 2,
+          "lotm/webnovel/2/2026-11-05": 39
+        },
+        "weekClaims": {},
+        "achievementDates": {
+          "chest-1": "2026-11-07",
+          "early-bird": "2026-11-07",
+          "first-chapter": "2026-11-05",
+          "first-page": "2026-11-04",
+          "freeze-saved": "2026-11-07",
+          "goal-1": "2026-11-05",
+          "overachiever": "2026-11-05",
+          "quests-1": "2026-11-07",
+          "streak-3": "2026-11-07",
+          "two-worlds": "2026-11-07",
+          "xp-100": "2026-11-05"
+        },
+        "freezeMilestones": [
+          10,
+          20
+        ],
+        "chestOpenedOn": "2026-11-07",
+        "chestReward": {
+          "on": "2026-11-07",
+          "xp": 13,
+          "freeze": false
+        },
+        "goalCelebratedOn": "2026-11-07",
+        "goal": "serious",
+        "goalUpdatedAt": 1762500000000
+      }
+    },
+    {
+      "name": "quest bonus duplicate",
+      "now": "2026-11-07T12:00:00",
+      "doc": {
+        "version": 1,
+        "totalXp": 75,
+        "totalPages": 0,
+        "totalChapters": 0,
+        "freezes": 1,
+        "goalDays": 0,
+        "freezesUsed": 0,
+        "repairs": 0,
+        "comebacks": 0,
+        "questDays": 1,
+        "weekends": 0,
+        "overtimeDays": 0,
+        "totalSeconds": 0,
+        "focusSessions": 0,
+        "chestsOpened": 0,
+        "weeklyClaims": 0,
+        "weeklyGolds": 0,
+        "bonusXp": 0,
+        "rewardXp": 0,
+        "longestStreak": 0,
+        "longestGoalStreak": 0,
+        "bestDayPages": 0,
+        "bestDayChapters": 0,
+        "bestDayXp": 0,
+        "earlyBird": 0,
+        "nightOwl": 0,
+        "longestSession": 0,
+        "freezeDates": [],
+        "repairDates": [],
+        "goalDates": [],
+        "chaptersCompleted": [],
+        "achievements": [],
+        "hours": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "days": {
+          "2026-11-07": {
+            "pages": 30,
+            "chapters": 0,
+            "xp": 75,
+            "quests": true
+          }
+        },
+        "floors": {},
+        "weekClaims": {},
+        "achievementDates": {},
+        "freezeMilestones": [],
+        "chestOpenedOn": null,
+        "chestReward": null,
+        "goalCelebratedOn": null,
+        "goal": "regular",
+        "goalUpdatedAt": 0
+      },
+      "delta": {
+        "days": {
+          "2026-11-07": {
+            "pages": 10,
+            "xp": 35,
+            "quests": true
+          }
+        },
+        "add": {
+          "questDays": 1,
+          "totalXp": 35
+        }
+      },
+      "expected": {
+        "version": 1,
+        "totalXp": 95,
+        "totalPages": 0,
+        "totalChapters": 0,
+        "freezes": 1,
+        "goalDays": 0,
+        "freezesUsed": 0,
+        "repairs": 0,
+        "comebacks": 0,
+        "questDays": 1,
+        "weekends": 0,
+        "overtimeDays": 0,
+        "totalSeconds": 0,
+        "focusSessions": 0,
+        "chestsOpened": 0,
+        "weeklyClaims": 0,
+        "weeklyGolds": 0,
+        "bonusXp": 0,
+        "rewardXp": 0,
+        "longestStreak": 0,
+        "longestGoalStreak": 0,
+        "bestDayPages": 0,
+        "bestDayChapters": 0,
+        "bestDayXp": 0,
+        "earlyBird": 0,
+        "nightOwl": 0,
+        "longestSession": 0,
+        "freezeDates": [],
+        "repairDates": [],
+        "goalDates": [],
+        "chaptersCompleted": [],
+        "achievements": [],
+        "hours": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "days": {
+          "2026-11-07": {
+            "pages": 40,
+            "chapters": 0,
+            "xp": 95,
+            "quests": true
+          }
+        },
+        "floors": {},
+        "weekClaims": {},
+        "achievementDates": {},
+        "freezeMilestones": [],
+        "chestOpenedOn": null,
+        "chestReward": null,
+        "goalCelebratedOn": null,
+        "goal": "regular",
+        "goalUpdatedAt": 0
+      }
+    },
+    {
+      "name": "older goal loses",
+      "now": "2026-11-07T12:00:00",
+      "doc": {
+        "version": 1,
+        "totalXp": 224,
+        "totalPages": 73,
+        "totalChapters": 2,
+        "freezes": 0,
+        "goalDays": 2,
+        "freezesUsed": 1,
+        "repairs": 0,
+        "comebacks": 0,
+        "questDays": 1,
+        "weekends": 0,
+        "overtimeDays": 2,
+        "totalSeconds": 0,
+        "focusSessions": 0,
+        "chestsOpened": 1,
+        "weeklyClaims": 0,
+        "weeklyGolds": 0,
+        "bonusXp": 0,
+        "rewardXp": 13,
+        "longestStreak": 3,
+        "longestGoalStreak": 1,
+        "bestDayPages": 40,
+        "bestDayChapters": 1,
+        "bestDayXp": 105,
+        "earlyBird": 1,
+        "nightOwl": 0,
+        "longestSession": 0,
+        "freezeDates": [
+          "2026-11-06"
+        ],
+        "repairDates": [],
+        "goalDates": [
+          "2026-11-05",
+          "2026-11-07"
+        ],
+        "chaptersCompleted": [
+          "coi/pt-br/3",
+          "lotm/webnovel/2"
+        ],
+        "achievements": [
+          "chest-1",
+          "early-bird",
+          "first-chapter",
+          "first-page",
+          "freeze-saved",
+          "goal-1",
+          "overachiever",
+          "quests-1",
+          "streak-3",
+          "two-worlds",
+          "xp-100"
+        ],
+        "hours": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          30,
+          0,
+          0,
+          0,
+          0,
+          0,
+          43,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "days": {
+          "2026-11-04": {
+            "pages": 3,
+            "chapters": 0,
+            "xp": 6
+          },
+          "2026-11-05": {
+            "pages": 40,
+            "chapters": 1,
+            "xp": 105
+          },
+          "2026-11-07": {
+            "pages": 30,
+            "chapters": 1,
+            "xp": 100,
+            "quests": true
+          }
+        },
+        "floors": {
+          "coi/pt-br/3/2026-11-07": 29,
+          "lotm/webnovel/1/2026-11-04": 2,
+          "lotm/webnovel/2/2026-11-05": 39
+        },
+        "weekClaims": {},
+        "achievementDates": {
+          "chest-1": "2026-11-07",
+          "early-bird": "2026-11-07",
+          "first-chapter": "2026-11-05",
+          "first-page": "2026-11-04",
+          "freeze-saved": "2026-11-07",
+          "goal-1": "2026-11-05",
+          "overachiever": "2026-11-05",
+          "quests-1": "2026-11-07",
+          "streak-3": "2026-11-07",
+          "two-worlds": "2026-11-07",
+          "xp-100": "2026-11-05"
+        },
+        "freezeMilestones": [],
+        "chestOpenedOn": "2026-11-07",
+        "chestReward": {
+          "on": "2026-11-07",
+          "xp": 13,
+          "freeze": false
+        },
+        "goalCelebratedOn": "2026-11-07",
+        "goal": "serious",
+        "goalUpdatedAt": 500
+      },
+      "delta": {
+        "goal": {
+          "value": "casual",
+          "at": 400
+        }
+      },
+      "expected": {
+        "version": 1,
+        "totalXp": 224,
+        "totalPages": 73,
+        "totalChapters": 2,
+        "freezes": 0,
+        "goalDays": 2,
+        "freezesUsed": 1,
+        "repairs": 0,
+        "comebacks": 0,
+        "questDays": 1,
+        "weekends": 0,
+        "overtimeDays": 2,
+        "totalSeconds": 0,
+        "focusSessions": 0,
+        "chestsOpened": 1,
+        "weeklyClaims": 0,
+        "weeklyGolds": 0,
+        "bonusXp": 0,
+        "rewardXp": 13,
+        "longestStreak": 3,
+        "longestGoalStreak": 1,
+        "bestDayPages": 40,
+        "bestDayChapters": 1,
+        "bestDayXp": 105,
+        "earlyBird": 1,
+        "nightOwl": 0,
+        "longestSession": 0,
+        "freezeDates": [
+          "2026-11-06"
+        ],
+        "repairDates": [],
+        "goalDates": [
+          "2026-11-05",
+          "2026-11-07"
+        ],
+        "chaptersCompleted": [
+          "coi/pt-br/3",
+          "lotm/webnovel/2"
+        ],
+        "achievements": [
+          "chest-1",
+          "early-bird",
+          "first-chapter",
+          "first-page",
+          "freeze-saved",
+          "goal-1",
+          "overachiever",
+          "quests-1",
+          "streak-3",
+          "two-worlds",
+          "xp-100"
+        ],
+        "hours": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          30,
+          0,
+          0,
+          0,
+          0,
+          0,
+          43,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "days": {
+          "2026-11-04": {
+            "pages": 3,
+            "chapters": 0,
+            "xp": 6
+          },
+          "2026-11-05": {
+            "pages": 40,
+            "chapters": 1,
+            "xp": 105
+          },
+          "2026-11-07": {
+            "pages": 30,
+            "chapters": 1,
+            "xp": 100,
+            "quests": true
+          }
+        },
+        "floors": {
+          "coi/pt-br/3/2026-11-07": 29,
+          "lotm/webnovel/1/2026-11-04": 2,
+          "lotm/webnovel/2/2026-11-05": 39
+        },
+        "weekClaims": {},
+        "achievementDates": {
+          "chest-1": "2026-11-07",
+          "early-bird": "2026-11-07",
+          "first-chapter": "2026-11-05",
+          "first-page": "2026-11-04",
+          "freeze-saved": "2026-11-07",
+          "goal-1": "2026-11-05",
+          "overachiever": "2026-11-05",
+          "quests-1": "2026-11-07",
+          "streak-3": "2026-11-07",
+          "two-worlds": "2026-11-07",
+          "xp-100": "2026-11-05"
+        },
+        "freezeMilestones": [],
+        "chestOpenedOn": "2026-11-07",
+        "chestReward": {
+          "on": "2026-11-07",
+          "xp": 13,
+          "freeze": false
+        },
+        "goalCelebratedOn": "2026-11-07",
+        "goal": "serious",
+        "goalUpdatedAt": 500
+      }
+    },
+    {
+      "name": "retention and floors window",
+      "now": "2026-11-07T12:00:00",
+      "doc": {
+        "version": 1,
+        "totalXp": 0,
+        "totalPages": 0,
+        "totalChapters": 0,
+        "freezes": 1,
+        "goalDays": 0,
+        "freezesUsed": 0,
+        "repairs": 0,
+        "comebacks": 0,
+        "questDays": 0,
+        "weekends": 0,
+        "overtimeDays": 0,
+        "totalSeconds": 0,
+        "focusSessions": 0,
+        "chestsOpened": 0,
+        "weeklyClaims": 0,
+        "weeklyGolds": 0,
+        "bonusXp": 0,
+        "rewardXp": 0,
+        "longestStreak": 0,
+        "longestGoalStreak": 0,
+        "bestDayPages": 0,
+        "bestDayChapters": 0,
+        "bestDayXp": 0,
+        "earlyBird": 0,
+        "nightOwl": 0,
+        "longestSession": 0,
+        "freezeDates": [],
+        "repairDates": [],
+        "goalDates": [],
+        "chaptersCompleted": [],
+        "achievements": [],
+        "hours": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "days": {},
+        "floors": {},
+        "weekClaims": {},
+        "achievementDates": {},
+        "freezeMilestones": [],
+        "chestOpenedOn": null,
+        "chestReward": null,
+        "goalCelebratedOn": null,
+        "goal": "regular",
+        "goalUpdatedAt": 0
+      },
+      "delta": {
+        "days": {
+          "2025-01-01": {
+            "pages": 5,
+            "xp": 10
+          },
+          "2026-11-01": {
+            "pages": 1,
+            "xp": 2
+          }
+        },
+        "floors": {
+          "lotm/webnovel/5/2026-10-20": 3,
+          "lotm/webnovel/5/2026-11-06": 7
+        },
+        "add": {
+          "totalPages": 6,
+          "totalXp": 12
+        }
+      },
+      "expected": {
+        "version": 1,
+        "totalXp": 12,
+        "totalPages": 6,
+        "totalChapters": 0,
+        "freezes": 1,
+        "goalDays": 0,
+        "freezesUsed": 0,
+        "repairs": 0,
+        "comebacks": 0,
+        "questDays": 0,
+        "weekends": 0,
+        "overtimeDays": 0,
+        "totalSeconds": 0,
+        "focusSessions": 0,
+        "chestsOpened": 0,
+        "weeklyClaims": 0,
+        "weeklyGolds": 0,
+        "bonusXp": 0,
+        "rewardXp": 0,
+        "longestStreak": 0,
+        "longestGoalStreak": 0,
+        "bestDayPages": 0,
+        "bestDayChapters": 0,
+        "bestDayXp": 0,
+        "earlyBird": 0,
+        "nightOwl": 0,
+        "longestSession": 0,
+        "freezeDates": [],
+        "repairDates": [],
+        "goalDates": [],
+        "chaptersCompleted": [],
+        "achievements": [],
+        "hours": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "days": {
+          "2026-11-01": {
+            "pages": 1,
+            "chapters": 0,
+            "xp": 2
+          }
+        },
+        "floors": {
+          "lotm/webnovel/5/2026-11-06": 7
+        },
+        "weekClaims": {},
+        "achievementDates": {},
+        "freezeMilestones": [],
+        "chestOpenedOn": null,
+        "chestReward": null,
+        "goalCelebratedOn": null,
+        "goal": "regular",
+        "goalUpdatedAt": 0
+      }
+    }
+  ],
+  "diff": [
+    {
+      "name": "phone history",
+      "local": {
+        "version": 1,
+        "totalXp": 224,
+        "totalPages": 73,
+        "totalChapters": 2,
+        "freezes": 0,
+        "goalDays": 2,
+        "freezesUsed": 1,
+        "repairs": 0,
+        "comebacks": 0,
+        "questDays": 1,
+        "weekends": 0,
+        "overtimeDays": 2,
+        "totalSeconds": 0,
+        "focusSessions": 0,
+        "chestsOpened": 1,
+        "weeklyClaims": 0,
+        "weeklyGolds": 0,
+        "bonusXp": 0,
+        "rewardXp": 13,
+        "longestStreak": 3,
+        "longestGoalStreak": 1,
+        "bestDayPages": 40,
+        "bestDayChapters": 1,
+        "bestDayXp": 105,
+        "earlyBird": 1,
+        "nightOwl": 0,
+        "longestSession": 0,
+        "freezeDates": [
+          "2026-11-06"
+        ],
+        "repairDates": [],
+        "goalDates": [
+          "2026-11-05",
+          "2026-11-07"
+        ],
+        "chaptersCompleted": [
+          "coi/pt-br/3",
+          "lotm/webnovel/2"
+        ],
+        "achievements": [
+          "chest-1",
+          "early-bird",
+          "first-chapter",
+          "first-page",
+          "freeze-saved",
+          "goal-1",
+          "overachiever",
+          "quests-1",
+          "streak-3",
+          "two-worlds",
+          "xp-100"
+        ],
+        "hours": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          30,
+          0,
+          0,
+          0,
+          0,
+          0,
+          43,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "days": {
+          "2026-11-04": {
+            "pages": 3,
+            "chapters": 0,
+            "xp": 6
+          },
+          "2026-11-05": {
+            "pages": 40,
+            "chapters": 1,
+            "xp": 105
+          },
+          "2026-11-07": {
+            "pages": 30,
+            "chapters": 1,
+            "xp": 100,
+            "quests": true
+          }
+        },
+        "floors": {
+          "coi/pt-br/3/2026-11-07": 29,
+          "lotm/webnovel/1/2026-11-04": 2,
+          "lotm/webnovel/2/2026-11-05": 39
+        },
+        "weekClaims": {},
+        "achievementDates": {
+          "chest-1": "2026-11-07",
+          "early-bird": "2026-11-07",
+          "first-chapter": "2026-11-05",
+          "first-page": "2026-11-04",
+          "freeze-saved": "2026-11-07",
+          "goal-1": "2026-11-05",
+          "overachiever": "2026-11-05",
+          "quests-1": "2026-11-07",
+          "streak-3": "2026-11-07",
+          "two-worlds": "2026-11-07",
+          "xp-100": "2026-11-05"
+        },
+        "freezeMilestones": [],
+        "chestOpenedOn": "2026-11-07",
+        "chestReward": {
+          "on": "2026-11-07",
+          "xp": 13,
+          "freeze": false
+        },
+        "goalCelebratedOn": "2026-11-07",
+        "goal": "serious",
+        "goalUpdatedAt": 1762500000000
+      },
+      "base": {
+        "version": 1,
+        "totalXp": 0,
+        "totalPages": 0,
+        "totalChapters": 0,
+        "freezes": 1,
+        "goalDays": 0,
+        "freezesUsed": 0,
+        "repairs": 0,
+        "comebacks": 0,
+        "questDays": 0,
+        "weekends": 0,
+        "overtimeDays": 0,
+        "totalSeconds": 0,
+        "focusSessions": 0,
+        "chestsOpened": 0,
+        "weeklyClaims": 0,
+        "weeklyGolds": 0,
+        "bonusXp": 0,
+        "rewardXp": 0,
+        "longestStreak": 0,
+        "longestGoalStreak": 0,
+        "bestDayPages": 0,
+        "bestDayChapters": 0,
+        "bestDayXp": 0,
+        "earlyBird": 0,
+        "nightOwl": 0,
+        "longestSession": 0,
+        "freezeDates": [],
+        "repairDates": [],
+        "goalDates": [],
+        "chaptersCompleted": [],
+        "achievements": [],
+        "hours": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "days": {},
+        "floors": {},
+        "weekClaims": {},
+        "achievementDates": {},
+        "freezeMilestones": [],
+        "chestOpenedOn": null,
+        "chestReward": null,
+        "goalCelebratedOn": null,
+        "goal": "regular",
+        "goalUpdatedAt": 0
+      },
+      "expected": {
+        "add": {
+          "totalXp": 224,
+          "totalPages": 73,
+          "totalChapters": 2,
+          "freezes": -1,
+          "goalDays": 2,
+          "freezesUsed": 1,
+          "questDays": 1,
+          "overtimeDays": 2,
+          "chestsOpened": 1,
+          "rewardXp": 13
+        },
+        "hours": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          30,
+          0,
+          0,
+          0,
+          0,
+          0,
+          43,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "days": {
+          "2026-11-04": {
+            "pages": 3,
+            "xp": 6
+          },
+          "2026-11-05": {
+            "pages": 40,
+            "chapters": 1,
+            "xp": 105
+          },
+          "2026-11-07": {
+            "pages": 30,
+            "chapters": 1,
+            "xp": 100,
+            "quests": true
+          }
+        },
+        "max": {
+          "longestStreak": 3,
+          "longestGoalStreak": 1,
+          "bestDayPages": 40,
+          "bestDayChapters": 1,
+          "bestDayXp": 105,
+          "earlyBird": 1
+        },
+        "floors": {
+          "coi/pt-br/3/2026-11-07": 29,
+          "lotm/webnovel/1/2026-11-04": 2,
+          "lotm/webnovel/2/2026-11-05": 39
+        },
+        "sets": {
+          "freezeDates": [
+            "2026-11-06"
+          ],
+          "goalDates": [
+            "2026-11-05",
+            "2026-11-07"
+          ],
+          "chaptersCompleted": [
+            "coi/pt-br/3",
+            "lotm/webnovel/2"
+          ],
+          "achievements": [
+            "chest-1",
+            "early-bird",
+            "first-chapter",
+            "first-page",
+            "freeze-saved",
+            "goal-1",
+            "overachiever",
+            "quests-1",
+            "streak-3",
+            "two-worlds",
+            "xp-100"
+          ]
+        },
+        "achievementDates": {
+          "chest-1": "2026-11-07",
+          "early-bird": "2026-11-07",
+          "first-chapter": "2026-11-05",
+          "first-page": "2026-11-04",
+          "freeze-saved": "2026-11-07",
+          "goal-1": "2026-11-05",
+          "overachiever": "2026-11-05",
+          "quests-1": "2026-11-07",
+          "streak-3": "2026-11-07",
+          "two-worlds": "2026-11-07",
+          "xp-100": "2026-11-05"
+        },
+        "chestOpenedOn": "2026-11-07",
+        "chestReward": {
+          "on": "2026-11-07",
+          "xp": 13,
+          "freeze": false
+        },
+        "goalCelebratedOn": "2026-11-07",
+        "goal": {
+          "value": "serious",
+          "at": 1762500000000
+        }
+      }
+    },
+    {
+      "name": "web since server",
+      "local": {
+        "version": 1,
+        "totalXp": 308,
+        "totalPages": 115,
+        "totalChapters": 2,
+        "freezes": 0,
+        "goalDays": 2,
+        "freezesUsed": 1,
+        "repairs": 0,
+        "comebacks": 0,
+        "questDays": 1,
+        "weekends": 0,
+        "overtimeDays": 3,
+        "totalSeconds": 0,
+        "focusSessions": 0,
+        "chestsOpened": 1,
+        "weeklyClaims": 0,
+        "weeklyGolds": 0,
+        "bonusXp": 0,
+        "rewardXp": 13,
+        "longestStreak": 3,
+        "longestGoalStreak": 1,
+        "bestDayPages": 40,
+        "bestDayChapters": 1,
+        "bestDayXp": 105,
+        "earlyBird": 1,
+        "nightOwl": 1,
+        "longestSession": 0,
+        "freezeDates": [
+          "2026-11-06"
+        ],
+        "repairDates": [],
+        "goalDates": [
+          "2026-11-05",
+          "2026-11-07"
+        ],
+        "chaptersCompleted": [
+          "coi/pt-br/3",
+          "lotm/webnovel/2"
+        ],
+        "achievements": [
+          "chest-1",
+          "early-bird",
+          "first-chapter",
+          "first-page",
+          "freeze-saved",
+          "goal-1",
+          "night-owl",
+          "overachiever",
+          "quests-1",
+          "streak-3",
+          "two-worlds",
+          "xp-100"
+        ],
+        "hours": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          30,
+          0,
+          0,
+          0,
+          0,
+          0,
+          55,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          30
+        ],
+        "days": {
+          "2026-11-04": {
+            "pages": 3,
+            "chapters": 0,
+            "xp": 6
+          },
+          "2026-11-05": {
+            "pages": 52,
+            "chapters": 1,
+            "xp": 129
+          },
+          "2026-11-07": {
+            "pages": 60,
+            "chapters": 2,
+            "xp": 185,
+            "quests": true
+          }
+        },
+        "floors": {
+          "coi/pt-br/3/2026-11-07": 29,
+          "lotm/webnovel/1/2026-11-04": 2,
+          "lotm/webnovel/2/2026-11-05": 39,
+          "lotm/webnovel/9/2026-11-05": 11
+        },
+        "weekClaims": {},
+        "achievementDates": {
+          "chest-1": "2026-11-07",
+          "early-bird": "2026-11-07",
+          "first-chapter": "2026-11-05",
+          "first-page": "2026-11-04",
+          "freeze-saved": "2026-11-07",
+          "goal-1": "2026-11-05",
+          "night-owl": "2026-11-07",
+          "overachiever": "2026-11-05",
+          "quests-1": "2026-11-07",
+          "streak-3": "2026-11-07",
+          "two-worlds": "2026-11-07",
+          "xp-100": "2026-11-05"
+        },
+        "freezeMilestones": [],
+        "chestOpenedOn": "2026-11-07",
+        "chestReward": {
+          "on": "2026-11-07",
+          "xp": 13,
+          "freeze": false
+        },
+        "goalCelebratedOn": "2026-11-07",
+        "goal": "serious",
+        "goalUpdatedAt": 1762500000000
+      },
+      "base": {
+        "version": 1,
+        "totalXp": 224,
+        "totalPages": 73,
+        "totalChapters": 2,
+        "freezes": 0,
+        "goalDays": 2,
+        "freezesUsed": 1,
+        "repairs": 0,
+        "comebacks": 0,
+        "questDays": 1,
+        "weekends": 0,
+        "overtimeDays": 2,
+        "totalSeconds": 0,
+        "focusSessions": 0,
+        "chestsOpened": 1,
+        "weeklyClaims": 0,
+        "weeklyGolds": 0,
+        "bonusXp": 0,
+        "rewardXp": 13,
+        "longestStreak": 3,
+        "longestGoalStreak": 1,
+        "bestDayPages": 40,
+        "bestDayChapters": 1,
+        "bestDayXp": 105,
+        "earlyBird": 1,
+        "nightOwl": 0,
+        "longestSession": 0,
+        "freezeDates": [
+          "2026-11-06"
+        ],
+        "repairDates": [],
+        "goalDates": [
+          "2026-11-05",
+          "2026-11-07"
+        ],
+        "chaptersCompleted": [
+          "coi/pt-br/3",
+          "lotm/webnovel/2"
+        ],
+        "achievements": [
+          "chest-1",
+          "early-bird",
+          "first-chapter",
+          "first-page",
+          "freeze-saved",
+          "goal-1",
+          "overachiever",
+          "quests-1",
+          "streak-3",
+          "two-worlds",
+          "xp-100"
+        ],
+        "hours": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          30,
+          0,
+          0,
+          0,
+          0,
+          0,
+          43,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "days": {
+          "2026-11-04": {
+            "pages": 3,
+            "chapters": 0,
+            "xp": 6
+          },
+          "2026-11-05": {
+            "pages": 40,
+            "chapters": 1,
+            "xp": 105
+          },
+          "2026-11-07": {
+            "pages": 30,
+            "chapters": 1,
+            "xp": 100,
+            "quests": true
+          }
+        },
+        "floors": {
+          "coi/pt-br/3/2026-11-07": 29,
+          "lotm/webnovel/1/2026-11-04": 2,
+          "lotm/webnovel/2/2026-11-05": 39
+        },
+        "weekClaims": {},
+        "achievementDates": {
+          "chest-1": "2026-11-07",
+          "early-bird": "2026-11-07",
+          "first-chapter": "2026-11-05",
+          "first-page": "2026-11-04",
+          "freeze-saved": "2026-11-07",
+          "goal-1": "2026-11-05",
+          "overachiever": "2026-11-05",
+          "quests-1": "2026-11-07",
+          "streak-3": "2026-11-07",
+          "two-worlds": "2026-11-07",
+          "xp-100": "2026-11-05"
+        },
+        "freezeMilestones": [],
+        "chestOpenedOn": "2026-11-07",
+        "chestReward": {
+          "on": "2026-11-07",
+          "xp": 13,
+          "freeze": false
+        },
+        "goalCelebratedOn": "2026-11-07",
+        "goal": "serious",
+        "goalUpdatedAt": 1762500000000
+      },
+      "expected": {
+        "add": {
+          "totalXp": 84,
+          "totalPages": 42,
+          "overtimeDays": 1
+        },
+        "hours": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          12,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          30
+        ],
+        "days": {
+          "2026-11-05": {
+            "pages": 12,
+            "xp": 24
+          },
+          "2026-11-07": {
+            "pages": 30,
+            "chapters": 1,
+            "xp": 85
+          }
+        },
+        "max": {
+          "nightOwl": 1
+        },
+        "floors": {
+          "lotm/webnovel/9/2026-11-05": 11
+        },
+        "sets": {
+          "achievements": [
+            "night-owl"
+          ]
+        },
+        "achievementDates": {
+          "night-owl": "2026-11-07"
+        }
+      }
+    }
+  ],
+  "quests": {
+    "2026-11-01": [
+      "goal:50",
+      "distinct:2",
+      "pages:12"
+    ],
+    "2026-11-02": [
+      "goal:50",
+      "overtime:75",
+      "chapter:1"
+    ],
+    "2026-11-03": [
+      "goal:50",
+      "pages:12",
+      "overtime:75"
+    ],
+    "2026-11-04": [
+      "goal:50",
+      "chapter:1",
+      "pages:12"
+    ],
+    "2026-11-05": [
+      "goal:50",
+      "distinct:2",
+      "chapter:1"
+    ],
+    "2026-11-06": [
+      "goal:50",
+      "overtime:75",
+      "distinct:2"
+    ],
+    "2026-11-07": [
+      "goal:50",
+      "pages:12",
+      "chapter:1"
+    ],
+    "2026-11-08": [
+      "goal:50",
+      "chapter:1",
+      "distinct:2"
+    ],
+    "2026-11-09": [
+      "goal:50",
+      "distinct:2",
+      "overtime:75"
+    ],
+    "2026-11-10": [
+      "goal:50",
+      "pages:12",
+      "chapter:1"
+    ],
+    "2026-11-11": [
+      "goal:50",
+      "chapter:1",
+      "distinct:2"
+    ],
+    "2026-11-12": [
+      "goal:50",
+      "distinct:2",
+      "overtime:75"
+    ],
+    "2026-11-13": [
+      "goal:50",
+      "overtime:75",
+      "pages:12"
+    ],
+    "2026-11-14": [
+      "goal:50",
+      "pages:12",
+      "distinct:2"
+    ],
+    "2026-11-15": [
+      "goal:50",
+      "chapter:1",
+      "overtime:75"
+    ],
+    "2026-11-16": [
+      "goal:50",
+      "distinct:2",
+      "pages:12"
+    ],
+    "2026-11-17": [
+      "goal:50",
+      "overtime:75",
+      "chapter:1"
+    ],
+    "2026-11-18": [
+      "goal:50",
+      "pages:12",
+      "overtime:75"
+    ],
+    "2026-11-19": [
+      "goal:50",
+      "chapter:1",
+      "pages:12"
+    ],
+    "2026-11-20": [
+      "goal:50",
+      "overtime:75",
+      "chapter:1"
+    ],
+    "2026-11-21": [
+      "goal:50",
+      "pages:12",
+      "overtime:75"
+    ],
+    "2026-11-22": [
+      "goal:50",
+      "chapter:1",
+      "pages:12"
+    ],
+    "2026-11-23": [
+      "goal:50",
+      "distinct:2",
+      "chapter:1"
+    ],
+    "2026-11-24": [
+      "goal:50",
+      "overtime:75",
+      "distinct:2"
+    ],
+    "2026-11-25": [
+      "goal:50",
+      "pages:12",
+      "chapter:1"
+    ],
+    "2026-11-26": [
+      "goal:50",
+      "chapter:1",
+      "distinct:2"
+    ],
+    "2026-11-27": [
+      "goal:50",
+      "distinct:2",
+      "overtime:75"
+    ],
+    "2026-11-28": [
+      "goal:50",
+      "overtime:75",
+      "pages:12"
+    ],
+    "2026-11-29": [
+      "goal:50",
+      "pages:12",
+      "distinct:2"
+    ],
+    "2026-11-30": [
+      "goal:50",
+      "distinct:2",
+      "overtime:75"
+    ]
+  },
+  "chests": {
+    "2026-11-01": {
+      "rarity": "common",
+      "xp": 14,
+      "freeze": false
+    },
+    "2026-11-02": {
+      "rarity": "legendary",
+      "xp": 100,
+      "freeze": true
+    },
+    "2026-11-03": {
+      "rarity": "rare",
+      "xp": 25,
+      "freeze": false
+    },
+    "2026-11-04": {
+      "rarity": "common",
+      "xp": 18,
+      "freeze": false
+    },
+    "2026-11-05": {
+      "rarity": "common",
+      "xp": 20,
+      "freeze": false
+    },
+    "2026-11-06": {
+      "rarity": "epic",
+      "xp": 20,
+      "freeze": true
+    },
+    "2026-11-07": {
+      "rarity": "common",
+      "xp": 13,
+      "freeze": false
+    },
+    "2026-11-08": {
+      "rarity": "common",
+      "xp": 15,
+      "freeze": false
+    },
+    "2026-11-09": {
+      "rarity": "common",
+      "xp": 15,
+      "freeze": false
+    },
+    "2026-11-10": {
+      "rarity": "rare",
+      "xp": 27,
+      "freeze": false
+    },
+    "2026-11-11": {
+      "rarity": "common",
+      "xp": 19,
+      "freeze": false
+    },
+    "2026-11-12": {
+      "rarity": "epic",
+      "xp": 20,
+      "freeze": true
+    },
+    "2026-11-13": {
+      "rarity": "rare",
+      "xp": 38,
+      "freeze": false
+    },
+    "2026-11-14": {
+      "rarity": "common",
+      "xp": 12,
+      "freeze": false
+    },
+    "2026-11-15": {
+      "rarity": "common",
+      "xp": 14,
+      "freeze": false
+    },
+    "2026-11-16": {
+      "rarity": "rare",
+      "xp": 33,
+      "freeze": false
+    },
+    "2026-11-17": {
+      "rarity": "common",
+      "xp": 18,
+      "freeze": false
+    },
+    "2026-11-18": {
+      "rarity": "common",
+      "xp": 18,
+      "freeze": false
+    },
+    "2026-11-19": {
+      "rarity": "epic",
+      "xp": 20,
+      "freeze": true
+    },
+    "2026-11-20": {
+      "rarity": "common",
+      "xp": 11,
+      "freeze": false
+    },
+    "2026-11-21": {
+      "rarity": "common",
+      "xp": 13,
+      "freeze": false
+    },
+    "2026-11-22": {
+      "rarity": "legendary",
+      "xp": 100,
+      "freeze": true
+    },
+    "2026-11-23": {
+      "rarity": "rare",
+      "xp": 35,
+      "freeze": false
+    },
+    "2026-11-24": {
+      "rarity": "common",
+      "xp": 17,
+      "freeze": false
+    },
+    "2026-11-25": {
+      "rarity": "epic",
+      "xp": 20,
+      "freeze": true
+    },
+    "2026-11-26": {
+      "rarity": "rare",
+      "xp": 30,
+      "freeze": false
+    },
+    "2026-11-27": {
+      "rarity": "common",
+      "xp": 10,
+      "freeze": false
+    },
+    "2026-11-28": {
+      "rarity": "common",
+      "xp": 12,
+      "freeze": false
+    },
+    "2026-11-29": {
+      "rarity": "rare",
+      "xp": 25,
+      "freeze": false
+    },
+    "2026-11-30": {
+      "rarity": "common",
+      "xp": 16,
+      "freeze": false
+    }
+  }
+}

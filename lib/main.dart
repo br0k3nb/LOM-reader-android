@@ -13,6 +13,7 @@ import 'cloud_sync.dart';
 import 'celebrations.dart';
 import 'design.dart';
 import 'habit_store.dart';
+import 'habit_sync.dart';
 import 'progress_screen.dart';
 import 'reading_reminders.dart';
 import 'library_store.dart';
@@ -54,6 +55,7 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
   AuthStore? auth;
   CloudSync? sync;
   HabitStore? habits;
+  HabitSync? habitSync;
   ReadingReminders? reminders;
   String? error;
   int tab = 0;
@@ -96,12 +98,17 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
       final habitFile = File('${dir.path}/habits.json');
       final habitStore = HabitStore(habitFile);
       await habitStore.load();
+      // Signed in, habits switch to the account's file and merge with the
+      // website's record, so streaks and XP match the web reader.
+      final habitSyncer = HabitSync(account, habitStore, dir);
+      await habitSyncer.initialize();
       final reminderService = ReadingReminders();
       unawaited(reminderService.sync(habitStore));
       final allowed = await reminderService.notificationsAllowed();
       if (!mounted) {
         tasks.dispose();
         cloud.dispose();
+        habitSyncer.dispose();
         account.api.dispose();
         account.dispose();
         habitStore.dispose();
@@ -115,6 +122,7 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
       auth = account;
       sync = cloud;
       habits = habitStore;
+      habitSync = habitSyncer;
       reminders = reminderService;
       notificationsAllowed = allowed;
       _lastAccount = account.userId;
@@ -123,6 +131,7 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
       tasks.addListener(_refresh);
       account.addListener(_accountChanged);
       cloud.addListener(_refresh);
+      habitSyncer.addListener(_refresh);
       habitStore.addListener(_habitChanged);
       setState(() {});
       // Freezes spent while the app was closed are announced now.
@@ -141,6 +150,7 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
     if (_lastAccount != auth!.userId) {
       _lastAccount = auth!.userId;
       unawaited(sync!.activate());
+      unawaited(habitSync?.activate());
     }
     _refresh();
   }
@@ -312,6 +322,7 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
       _measure();
       auth?.refresh();
       sync?.synchronize();
+      habitSync?.synchronize();
       final store = habits;
       if (store != null) unawaited(reminders?.sync(store));
       reminders?.notificationsAllowed().then((allowed) {
@@ -534,9 +545,11 @@ class _LibraryHomeState extends State<LibraryHome> with WidgetsBindingObserver {
     downloads?.removeListener(_refresh);
     auth?.removeListener(_accountChanged);
     sync?.removeListener(_refresh);
+    habitSync?.removeListener(_refresh);
     habits?.removeListener(_habitChanged);
     downloads?.dispose();
     sync?.dispose();
+    habitSync?.dispose();
     habits?.dispose();
     auth?.api.dispose();
     auth?.dispose();

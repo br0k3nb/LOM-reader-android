@@ -999,8 +999,10 @@ class ReadingInsights {
 
 /// Duolingo-style motivation for steady reading: XP, levels, daily goals,
 /// daily quests, streaks with freezes and same-day rescues, and
-/// achievements. Device-global like bookmarks and reader settings; it never
-/// leaves the phone and is not part of account sync or reading backups.
+/// achievements. Signed out, it stays on the phone (`habits.json`). Signed
+/// in, each account has its own file and [HabitSync] merges it with the
+/// website's record (`/api/reading/habits`), so streaks, XP and achievements
+/// are shared with the web reader. It is never part of reading backups.
 ///
 /// Activity is measured in the same logical pages (800px) as account sync,
 /// with per-day/per-chapter floors so re-reading never double-counts. A day
@@ -1010,7 +1012,9 @@ class ReadingInsights {
 /// [rescueGoalMultiplier]× the daily goal.
 class HabitStore extends ChangeNotifier {
   HabitStore(this.file);
-  final File file;
+
+  /// The active profile's file; [switchFile] changes it on sign-in/out.
+  File file;
   Map<String, dynamic> data = _fresh();
   // Created on first write so it belongs to the zone doing the writing.
   Future<void>? _pending;
@@ -1061,6 +1065,7 @@ class HabitStore extends ChangeNotifier {
     'hours': List<int>.filled(24, 0),
     'weekClaims': <String, dynamic>{},
     'chestOpenedOn': null,
+    'chestReward': null,
     'readerHud': true,
     'days': <String, dynamic>{},
     'freezeDates': <String>[],
@@ -1073,6 +1078,7 @@ class HabitStore extends ChangeNotifier {
     'freezeMilestones': <int>[],
     'lostStreak': null,
     'goal': defaultGoal,
+    'goalUpdatedAt': 0,
     'remindersEnabled': true,
     'reminderTime': defaultReminderTime,
     'winBackEnabled': true,
@@ -1197,6 +1203,7 @@ class HabitStore extends ChangeNotifier {
   }
 
   Future<void> load() async {
+    data = _fresh();
     if (await file.exists()) {
       try {
         data = _validate(jsonDecode(await file.readAsString()));
@@ -1371,6 +1378,18 @@ class HabitStore extends ChangeNotifier {
     if (chest is String && parseDateKey(chest) != null) {
       next['chestOpenedOn'] = chest;
     }
+    final reward = value['chestReward'];
+    if (reward is Map &&
+        reward['on'] is String &&
+        parseDateKey(reward['on'] as String) != null) {
+      next['chestReward'] = {
+        'on': reward['on'],
+        'xp': _posInt(reward['xp']).clamp(0, 10000),
+        'freeze': reward['freeze'] == true,
+      };
+    }
+    final goalAt = value['goalUpdatedAt'];
+    if (goalAt is int && goalAt >= 0) next['goalUpdatedAt'] = goalAt;
     if (value['readerHud'] is bool) next['readerHud'] = value['readerHud'];
     final goal = value['goal'];
     if (goal is String && dailyGoals.containsKey(goal)) next['goal'] = goal;
@@ -1397,13 +1416,14 @@ class HabitStore extends ChangeNotifier {
 
   Future<void> persist() {
     final snapshot = jsonEncode(data);
+    final target = file;
     final pending = (_pending ?? Future<void>.value())
         .catchError((Object _) {})
         .then((_) async {
-          await file.parent.create(recursive: true);
-          final temp = File('${file.path}.tmp');
+          await target.parent.create(recursive: true);
+          final temp = File('${target.path}.tmp');
           await temp.writeAsString(snapshot, flush: true);
-          await temp.rename(file.path);
+          await temp.rename(target.path);
         });
     _pending = pending;
     notifyListeners();
@@ -2093,6 +2113,8 @@ class HabitStore extends ChangeNotifier {
     final key = dateKey(at);
     final reward = chestFor(key);
     data['chestOpenedOn'] = key;
+    // Remembered so a chest opened on two offline devices is refunded once.
+    data['chestReward'] = {'on': key, 'xp': reward.xp, 'freeze': reward.freeze};
     data['chestsOpened'] = chestsOpened + 1;
     _grantRewardXp(reward.xp, at);
     if (reward.freeze) _grantFreeze();
@@ -2239,6 +2261,8 @@ class HabitStore extends ChangeNotifier {
   Future<void> setGoal(String value) async {
     if (!dailyGoals.containsKey(value) || value == goal) return;
     data['goal'] = value;
+    // Last-writer-wins across synced devices.
+    data['goalUpdatedAt'] = DateTime.now().millisecondsSinceEpoch;
     await persist();
   }
 
@@ -2314,6 +2338,56 @@ class HabitStore extends ChangeNotifier {
         today: d.key == todayKey,
       ),
   ];
+
+  // ---------------------------------------------------------------------
+  // Profiles and account sync.
+
+  /// Preferences that belong to the phone rather than the account; they
+  /// follow the device across sign-in and sign-out.
+  static const deviceKeys = [
+    'readerHud',
+    'remindersEnabled',
+    'reminderTime',
+    'winBackEnabled',
+  ];
+
+  /// Saves the current profile, then loads [next] (fresh when missing),
+  /// keeping this phone's reminder and HUD preferences.
+  Future<void> switchFile(File next) async {
+    if (next.path == file.path) return;
+    await (_pending ?? Future<void>.value()).catchError((Object _) {});
+    final prefs = {for (final key in deviceKeys) key: data[key]};
+    file = next;
+    _lastEventAt = null;
+    _sessionSeconds = 0;
+    _sessionPages = 0;
+    _sessionXp = 0;
+    _sessionFocused = false;
+    _pendingSeconds = 0;
+    _unsavedSeconds = 0;
+    await load();
+    for (final entry in prefs.entries) {
+      if (entry.value != null) data[entry.key] = entry.value;
+    }
+    await persist();
+  }
+
+  /// Replaces the record with one merged from the account (see
+  /// habit_sync.dart), then re-runs the load-time bookkeeping: bridging missed
+  /// days, records, freezes earned and achievements reached by combined
+  /// totals. New celebrations are queued as usual.
+  Future<void> applySynced(Map<String, dynamic> merged, {DateTime? now}) async {
+    if (_disposed) return;
+    final at = now ?? DateTime.now();
+    data = _validate(jsonDecode(jsonEncode(merged)));
+    _reconcileFreezes(at);
+    _updateLongestStreak(at);
+    _backfillBests();
+    _maybeAwardFreeze();
+    _evaluateAchievements(at);
+    _prune(at);
+    await persist();
+  }
 
   @override
   void dispose() {
